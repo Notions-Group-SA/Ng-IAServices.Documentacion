@@ -1,0 +1,175 @@
+# =============================================================================
+# IAConnect — Fixtures de datos de prueba (SINTÉTICOS, PII-safe)
+# =============================================================================
+# origin: reverse-engineered | status: draft | confidence: high (estructura)
+# Fuente del modelo: NG/Ng-IAServices/scripts/01_create_database.sql
+# Relacionado: ../data-dictionary.md · ../er-diagrams/iaconnect.dbml · ../test-data-matrix.md
+#
+# SEGURIDAD: TODOS los valores son SINTÉTICOS. No hay API keys, contraseñas,
+# hashes ni datos personales reales. Los secretos usan placeholders evidentes
+# (SYNTH-*, hashes bcrypt con formato válido pero NO verificables).
+#
+# Consistencia referencial: las PK IDENTITY (Id) las asigna la BD; para enlazar
+# FKs se usan claves lógicas `_ref`. Un cargador debe resolver `_ref` -> Id real
+# tras cada INSERT (los tenants usan Id_Tenant natural, no IDENTITY).
+# =============================================================================
+
+meta:
+  seed: 20260715            # semilla fija para reproducibilidad
+  database: IAConnect
+  synthetic: true
+  pii_safe: true
+
+# -----------------------------------------------------------------------------
+# HAPPY PATH — set consistente que respeta todas las FKs y CHECKs
+# -----------------------------------------------------------------------------
+lut_Tenants:
+  - Id_Tenant: tenant-demo-claude
+    Nombre: "Demo Soporte (Claude)"
+    Proveedor_IA: claude                 # CHECK ok
+    System_Prompt: "Eres un asistente de soporte sintetico para pruebas."
+    Nombre_Modelo: claude-sonnet-4-5
+    Temperatura: 0.50
+    Max_Tokens: 4000
+    ApiKey_IA: "SYNTH-KEY-CLAUDE-0000-XXXX"   # secreto sintetico (en real: cifrado)
+    Permite_Imagenes: false
+    Max_Tamano_Imagen_KB: 2048
+    Formatos_Imagen_Permitidos: "PNG,JPG,WEBP"
+    Activo: true
+    Access_Token_Expiracion_Minutos: 30
+    Refresh_Token_Expiracion_Dias: 1
+    Mensaje_Bienvenida: "Hola, soy un asistente de prueba."
+    Usuario_Alta: SYSTEM
+    Usuario_Modificacion: SYSTEM
+
+  - Id_Tenant: tenant-demo-gemini
+    Nombre: "Demo Asistente (Gemini)"
+    Proveedor_IA: gemini                 # CHECK ok
+    System_Prompt: "Eres un asistente general sintetico para pruebas."
+    Nombre_Modelo: gemini-2.5-flash
+    Temperatura: 0.70
+    Max_Tokens: 4000
+    ApiKey_IA: "SYNTH-KEY-GEMINI-0000-XXXX"
+    Permite_Imagenes: true
+    Max_Tamano_Imagen_KB: 2048
+    Formatos_Imagen_Permitidos: "PNG,JPG,WEBP"
+    Activo: true
+    Access_Token_Expiracion_Minutos: 60
+    Refresh_Token_Expiracion_Dias: 7
+    Mensaje_Bienvenida: "Hola, en que puedo ayudarte."
+    Usuario_Alta: SYSTEM
+    Usuario_Modificacion: SYSTEM
+
+sys_Usuarios:
+  - _ref: user-admin
+    Nombre_Usuario: admin_synth
+    # bcrypt sintetico (formato $2a$12$ + 53 chars). NO es un hash real.
+    Password_Hash: "$2a$12$AbCdEfGhIjKlMnOpQrStUuVwXyZ0123456789AbCdEfGhIjKlMnOp"
+    Nombre_Completo: "Admin Sintetico"
+    Email: "admin.synth@example.test"       # PII sintetica (dominio .test)
+    Rol: admin                               # CHECK ok
+    Id_Tenant: null                          # admin global (FK nullable)
+    Activo: true
+    Intentos_Fallidos: 0
+    Fecha_Bloqueo: null
+
+  - _ref: user-operador-gemini
+    Nombre_Usuario: operador_synth
+    Password_Hash: "$2a$12$ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210ZyXwVuTsRqPoNmLk"
+    Nombre_Completo: "Operador Sintetico"
+    Email: "operador.synth@example.test"
+    Rol: operador                            # CHECK ok
+    Id_Tenant: tenant-demo-gemini            # FK -> lut_Tenants
+    Activo: true
+    Intentos_Fallidos: 0
+    Fecha_Bloqueo: null
+
+sys_Sesiones:
+  - _ref: sesion-1
+    Id_Sesion: "11111111-1111-4111-8111-111111111111"   # GUID sintetico, UNIQUE
+    Id_Tenant: tenant-demo-gemini            # FK -> lut_Tenants
+    Id_Usuario_Externo: "ext-user-synthetic-001"          # PII sintetica
+    Fecha_Inicio: "2026-07-15T10:00:00Z"
+    Fecha_Ultima_Actividad: "2026-07-15T10:05:00Z"
+    Activo: true
+
+sys_Mensajes:
+  - Id_Sesion_ref: sesion-1                  # FK -> sys_Sesiones.Id (resolver _ref)
+    Rol: user                                # CHECK ok
+    Contenido: "Hola, quiero informacion de prueba."       # PII/sensible sintetica
+    Tiene_Imagen: false
+    Tamano_Imagen_KB: null
+    Proveedor_Usado: null
+    Tokens_Prompt: null
+    Tokens_Respuesta: null
+    Fecha_Envio: "2026-07-15T10:00:10Z"
+
+  - Id_Sesion_ref: sesion-1
+    Rol: assistant                           # CHECK ok
+    Contenido: "Claro, esta es una respuesta sintetica de ejemplo."
+    Tiene_Imagen: false
+    Proveedor_Usado: gemini
+    Tokens_Prompt: 12
+    Tokens_Respuesta: 18
+    Fecha_Envio: "2026-07-15T10:00:12Z"
+
+sys_Fragmentos_Conocimiento:
+  - Id_Tenant: tenant-demo-gemini            # FK -> lut_Tenants
+    Documento_Origen: "manual-pruebas.pdf"
+    Indice_Fragmento: 0
+    Contenido: "Fragmento sintetico de la base de conocimiento para RAG."
+    Vector_Embedding: null                   # binario omitido (secreto/derivado)
+
+sys_Metricas_Uso:
+  - Id_Tenant: tenant-demo-gemini            # FK -> lut_Tenants
+    Id_Sesion_ref: sesion-1                  # FK nullable -> sys_Sesiones.Id
+    Proveedor: gemini
+    Modelo: gemini-2.5-flash
+    Tokens_Prompt: 12
+    Tokens_Respuesta: 18
+    Total_Tokens: 30                         # = 12 + 18 (consistente)
+    Tiene_Imagen: false
+    Fecha_Solicitud: "2026-07-15T10:00:12Z"
+    Duracion_Ms: 640
+
+sys_Refresh_Tokens:
+  - Id_Usuario_ref: user-operador-gemini     # FK -> sys_Usuarios.Id
+    Token: "SYNTH-REFRESH-TOKEN-0000-AAAA-BBBB"  # secreto sintetico, UNIQUE
+    Fecha_Expiracion: "2026-07-22T10:00:00Z"
+    Revocado: false
+    Fecha_Revocacion: null
+
+# -----------------------------------------------------------------------------
+# NEGATIVE FIXTURES — deben FALLAR al insertarse (ver test-data-matrix.md).
+# No cargar en el happy-path; usar en pruebas de validacion de restricciones.
+# -----------------------------------------------------------------------------
+_negativos:
+  - id: NEG-01
+    tabla: lut_Tenants
+    caso: "Proveedor_IA fuera del CHECK"    # -> TC-03
+    data: { Id_Tenant: tenant-bad, Proveedor_IA: mistral, Nombre: X, System_Prompt: X, Nombre_Modelo: X }
+    esperado: "Falla CHECK (error 547)"
+
+  - id: NEG-02
+    tabla: sys_Usuarios
+    caso: "Nombre_Usuario duplicado"        # -> TC-13
+    data: { Nombre_Usuario: admin_synth, Password_Hash: "$2a$12$dup", Nombre_Completo: Dup, Rol: admin }
+    esperado: "Falla UNIQUE (error 2627)"
+
+  - id: NEG-03
+    tabla: sys_Usuarios
+    caso: "FK Id_Tenant inexistente"        # -> TC-18
+    data: { Nombre_Usuario: huerfano, Password_Hash: "$2a$12$x", Nombre_Completo: H, Rol: operador, Id_Tenant: no-existe }
+    esperado: "Falla FK (error 547)"
+
+  - id: NEG-04
+    tabla: sys_Mensajes
+    caso: "FK Id_Sesion inexistente (huerfano)"  # -> TC-21
+    data: { Id_Sesion: 999999, Rol: user, Contenido: "x" }
+    esperado: "Falla FK (error 547)"
+
+  - id: NEG-05
+    tabla: sys_Mensajes
+    caso: "Rol fuera del CHECK"             # -> TC-08
+    data: { Id_Sesion_ref: sesion-1, Rol: bot, Contenido: "x" }
+    esperado: "Falla CHECK (error 547)"

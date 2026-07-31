@@ -1,0 +1,217 @@
+// origin: reverse-engineered, confidence: alta (estructura), media (semántica)
+// Fuente DDL: NG/Ng-IAServices/scripts/01_create_database.sql
+// Modelo C#: NG/Ng-IAServices/IAConnect.Infrastructure/Models/*.cs (mapeo 1:1 snake_case)
+//            NG/Ng-IAServices/IAConnect.Domain/Entities/*.cs (semántica de dominio, PascalCase)
+// SGBD: SQL Server. BD: IAConnect. 7 tablas, 7 FKs.
+// NOTA DE SEGURIDAD: ninguna credencial, ApiKey ni hash real fue copiado a esta documentación.
+
+Project IAConnect {
+  database_type: 'SQL Server'
+  Note: '''
+  Base de datos de la plataforma multi-tenant IAConnect (.NET 8): puente entre
+  aplicaciones cliente y proveedores de IA (Gemini / Claude / OpenAI).
+  Almacena configuración por tenant, usuarios/roles de gestión, sesiones y mensajes
+  de chat, base de conocimiento (RAG) y métricas de consumo de tokens.
+  Convención: prefijo lut_ = tabla de configuración (lookup); sys_ = tabla operativa.
+  Todas las tablas incluyen columnas de auditoría (Fecha_Alta, Fecha_Modificacion,
+  Usuario_Alta, Usuario_Modificacion). Timestamps en UTC (GETUTCDATE()).
+  '''
+}
+
+// ============================================================================
+// lut_Tenants — Configuración maestra por tenant (multi-tenant)
+// ============================================================================
+Table lut_Tenants {
+  Id_Tenant varchar(50) [pk, note: 'Clave de negocio del tenant (slug, ej. boleteria-digital)']
+  Nombre nvarchar(100) [not null, note: 'Nombre legible del tenant']
+  Proveedor_IA varchar(20) [not null, note: 'enum (CHECK): gemini | claude | openai']
+  System_Prompt "nvarchar(MAX)" [not null, note: 'config sensible: prompt de sistema que define la persona del asistente']
+  Nombre_Modelo varchar(50) [not null, note: 'Modelo concreto del proveedor (ej. gemini-2.5-flash, claude-sonnet-4-5)']
+  Temperatura decimal(3,2) [not null, default: 0.7, note: 'Creatividad del LLM. Rango inferido 0.00-2.00 (sin CHECK en BD)']
+  Max_Tokens int [not null, default: 4000, note: 'Tope de tokens de respuesta']
+  ApiKey_IA varchar(500) [not null, note: 'secreto: API key del proveedor IA, cifrada at-rest (AES; clave por variable de entorno IACONNECT_ENCRYPTION_KEY; ver 06-crosscutting). Fallback a texto plano si falta la clave. Nunca en claro']
+  Permite_Imagenes bit [not null, default: 0, note: 'Habilita entrada multimodal (imágenes)']
+  Max_Tamano_Imagen_KB int [not null, default: 2048, note: 'Tamaño máximo de imagen aceptada (KB)']
+  Formatos_Imagen_Permitidos varchar(100) [not null, default: 'PNG,JPG,WEBP', note: 'Lista CSV de extensiones permitidas']
+  Activo bit [not null, default: 1, note: 'Baja lógica del tenant']
+  Access_Token_Expiracion_Minutos int [not null, default: 60, note: 'Vida del access token JWT. Rango doc 5-1440 (sin CHECK en BD)']
+  Refresh_Token_Expiracion_Dias int [not null, default: 7, note: 'Vida del refresh token JWT. Rango doc 1-90 (sin CHECK en BD)']
+  Mensaje_Bienvenida nvarchar(500) [null, note: 'Saludo inicial mostrado al usuario (opcional)']
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Proveedor_IA [name: 'IX_lut_Tenants_Proveedor_IA']
+    Activo [name: 'IX_lut_Tenants_Activo']
+  }
+
+  Note: 'Configuración por tenant. Retención: permanente (dato maestro); baja lógica vía Activo. Confianza semántica: alta.'
+}
+
+// ============================================================================
+// sys_Usuarios — Usuarios de gestión (backoffice) con rol y bloqueo
+// ============================================================================
+Table sys_Usuarios {
+  Id int [pk, increment, note: 'PK sustituta (IDENTITY)']
+  Nombre_Usuario nvarchar(100) [not null, unique, note: 'PII: login único del usuario']
+  Password_Hash nvarchar(200) [not null, note: 'secreto: hash de contraseña (bcrypt $2a$12$...). Nunca contraseña en claro']
+  Nombre_Completo nvarchar(200) [not null, note: 'PII: nombre y apellido del usuario']
+  Email nvarchar(200) [null, note: 'PII: correo electrónico del usuario']
+  Rol varchar(20) [not null, note: 'enum (CHECK): admin | operador']
+  Id_Tenant varchar(50) [null, note: 'Tenant asignado; NULL = admin global sin tenant']
+  Activo bit [not null, default: 1, note: 'Baja lógica del usuario']
+  Intentos_Fallidos int [not null, default: 0, note: 'Contador de logins fallidos; se resetea en login exitoso']
+  Fecha_Bloqueo datetime2 [null, note: 'Fecha/hora hasta la cual la cuenta está bloqueada; NULL = no bloqueada']
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Id_Tenant [name: 'IX_sys_Usuarios_Id_Tenant']
+    Rol [name: 'IX_sys_Usuarios_Rol']
+    Activo [name: 'IX_sys_Usuarios_Activo']
+  }
+
+  Note: 'Cuentas de gestión. Regla de negocio: 5 intentos fallidos -> bloqueo 15 min (autenticacion_v1.0 §9). Retención: permanente; baja lógica vía Activo.'
+}
+
+// ============================================================================
+// sys_Sesiones — Sesiones de conversación por tenant
+// ============================================================================
+Table sys_Sesiones {
+  Id int [pk, increment, note: 'PK interna (IDENTITY); usada por FKs de mensajes y métricas']
+  Id_Sesion uniqueidentifier [not null, unique, default: `NEWID()`, note: 'Identificador público de sesión (GUID) expuesto por la API']
+  Id_Tenant varchar(50) [not null, note: 'Tenant dueño de la sesión']
+  Id_Usuario_Externo nvarchar(100) [null, note: 'PII: identificador del usuario final externo (opcional)']
+  Fecha_Inicio datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Ultima_Actividad datetime2 [not null, default: `GETUTCDATE()`, note: 'Actualizada en cada interacción; base de expiración de sesión']
+  Activo bit [not null, default: 1, note: 'Sesión abierta (1) o cerrada (0)']
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Id_Tenant [name: 'IX_sys_Sesiones_Id_Tenant']
+    Activo [name: 'IX_sys_Sesiones_Activo']
+    (Id_Tenant, Activo) [name: 'IX_sys_Sesiones_Id_Tenant_Activo']
+  }
+
+  Note: 'Doble identidad: Id (int, interno/FK) e Id_Sesion (GUID, público). Retención inferida: candidata a purga por antigüedad (GAP: no definida en esquema).'
+}
+
+// ============================================================================
+// sys_Mensajes — Turnos de conversación (historial de chat)
+// ============================================================================
+Table sys_Mensajes {
+  Id bigint [pk, increment]
+  Id_Sesion int [not null, note: 'FK a sys_Sesiones.Id (PK interna int, NO el GUID)']
+  Rol varchar(20) [not null, note: 'enum (CHECK): user | assistant | system']
+  Contenido "nvarchar(MAX)" [not null, note: 'PII/sensible: texto del mensaje; puede contener datos personales del usuario final']
+  Tiene_Imagen bit [not null, default: 0]
+  Tamano_Imagen_KB int [null, note: 'Tamaño de la imagen adjunta (KB), si aplica']
+  Proveedor_Usado varchar(20) [null, note: 'Proveedor IA que generó la respuesta (sin CHECK; enum solo en app)']
+  Tokens_Prompt int [null, note: 'Tokens consumidos por el prompt']
+  Tokens_Respuesta int [null, note: 'Tokens generados en la respuesta']
+  Fecha_Envio datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Id_Sesion [name: 'IX_sys_Mensajes_Id_Sesion']
+  }
+
+  Note: 'Historial conversacional. Retención inferida: sujeta a política de datos personales (GAP: no definida). Confianza semántica: alta.'
+}
+
+// ============================================================================
+// sys_Fragmentos_Conocimiento — Base de conocimiento (RAG) por tenant
+// ============================================================================
+Table sys_Fragmentos_Conocimiento {
+  Id bigint [pk, increment]
+  Id_Tenant varchar(50) [not null, note: 'Tenant dueño del fragmento']
+  Documento_Origen nvarchar(255) [not null, note: 'Nombre/identificador del documento fuente']
+  Indice_Fragmento int [not null, note: 'Orden del fragmento (chunk) dentro del documento']
+  Contenido "nvarchar(MAX)" [not null, note: 'sensible: texto del fragmento indexado para recuperación']
+  Vector_Embedding "varbinary(MAX)" [null, note: 'secreto/derivado: embedding vectorial del contenido (binario); no exponer']
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Id_Tenant [name: 'IX_sys_Fragmentos_Conocimiento_Id_Tenant']
+    (Id_Tenant, Documento_Origen) [name: 'IX_sys_Fragmentos_Conocimiento_Id_Tenant_Documento_Origen']
+  }
+
+  Note: 'Chunks para RAG (similarity_threshold 0.75, rag-spec_v1.0). Retención: ligada al ciclo de vida del documento origen (GAP: sin borrado en cascada por Documento_Origen).'
+}
+
+// ============================================================================
+// sys_Metricas_Uso — Telemetría de consumo de tokens/latencia
+// ============================================================================
+Table sys_Metricas_Uso {
+  Id bigint [pk, increment]
+  Id_Tenant varchar(50) [not null, note: 'Tenant al que se imputa el consumo']
+  Id_Sesion int [null, note: 'FK opcional a sys_Sesiones.Id; NULL para operaciones sin sesión']
+  Proveedor varchar(20) [not null, note: 'Proveedor IA usado (sin CHECK; enum solo en app)']
+  Modelo varchar(50) [not null, note: 'Modelo concreto usado en la solicitud']
+  Tokens_Prompt int [not null, note: 'Tokens de entrada']
+  Tokens_Respuesta int [not null, note: 'Tokens de salida']
+  Total_Tokens int [not null, note: 'Suma; redundante = Tokens_Prompt + Tokens_Respuesta (sin trigger que lo garantice)']
+  Tiene_Imagen bit [not null, default: 0]
+  Fecha_Solicitud datetime2 [not null, default: `GETUTCDATE()`]
+  Duracion_Ms int [not null, note: 'Latencia de la llamada al proveedor (ms)']
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Id_Tenant [name: 'IX_sys_Metricas_Uso_Id_Tenant']
+    Id_Sesion [name: 'IX_sys_Metricas_Uso_Id_Sesion']
+    Fecha_Solicitud [name: 'IX_sys_Metricas_Uso_Fecha_Solicitud']
+    (Id_Tenant, Proveedor) [name: 'IX_sys_Metricas_Uso_Id_Tenant_Proveedor']
+  }
+
+  Note: 'Telemetría append-only (facturación/observabilidad). Retención inferida: candidata a agregación/archivado por Fecha_Solicitud (GAP: sin política).'
+}
+
+// ============================================================================
+// sys_Refresh_Tokens — Refresh tokens JWT por usuario
+// ============================================================================
+Table sys_Refresh_Tokens {
+  Id int [pk, increment]
+  Id_Usuario int [not null, note: 'FK a sys_Usuarios.Id']
+  Token nvarchar(500) [not null, unique, note: 'secreto: refresh token JWT. Único; nunca loguear ni exponer']
+  Fecha_Expiracion datetime2 [not null, note: 'Vencimiento del refresh token']
+  Revocado bit [not null, default: 0, note: 'Marca de revocación (logout / rotación)']
+  Fecha_Revocacion datetime2 [null, note: 'Momento de revocación, si aplica']
+  Fecha_Alta datetime2 [not null, default: `GETUTCDATE()`]
+  Fecha_Modificacion datetime2 [not null, default: `GETUTCDATE()`]
+  Usuario_Alta nvarchar(100) [not null, default: 'SYSTEM']
+  Usuario_Modificacion nvarchar(100) [not null, default: 'SYSTEM']
+
+  indexes {
+    Id_Usuario [name: 'IX_sys_Refresh_Tokens_Id_Usuario']
+    Revocado [name: 'IX_sys_Refresh_Tokens_Revocado']
+  }
+
+  Note: 'Rotación de sesión JWT. Retención inferida: purgables tras Fecha_Expiracion o Revocado=1 (GAP: sin job de limpieza en esquema).'
+}
+
+// ============================================================================
+// RELACIONES (Foreign Keys) — todas ON DELETE NO ACTION (default; sin cascada)
+// ============================================================================
+Ref: sys_Usuarios.Id_Tenant > lut_Tenants.Id_Tenant                 // opcional (Id_Tenant NULL = admin global)
+Ref: sys_Sesiones.Id_Tenant > lut_Tenants.Id_Tenant
+Ref: sys_Fragmentos_Conocimiento.Id_Tenant > lut_Tenants.Id_Tenant
+Ref: sys_Metricas_Uso.Id_Tenant > lut_Tenants.Id_Tenant
+Ref: sys_Mensajes.Id_Sesion > sys_Sesiones.Id
+Ref: sys_Metricas_Uso.Id_Sesion > sys_Sesiones.Id                   // opcional (Id_Sesion NULL)
+Ref: sys_Refresh_Tokens.Id_Usuario > sys_Usuarios.Id

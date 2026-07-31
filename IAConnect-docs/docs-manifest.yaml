@@ -1,0 +1,228 @@
+# =============================================================================
+# docs-manifest.yaml — Manifiesto máquina-legible de la documentación de IAConnect
+# Marco de Documentación de Software v2.2 §12.2. Un agente calcula el gap documental
+# de forma determinística: required_docs − generados − vencidos.
+# =============================================================================
+manifest_version: "1.0"
+generated: "2026-07-15"
+generator: "/IA.Prompting.Templates/Tool-Prompts/Documentar-Fuentes-Software.md"
+origin_repo: "/NG/Ng-IAServices"
+status: draft            # todo el conjunto nace en draft (promoción a approved = humano)
+origin: reverse-engineered
+
+solution:
+  name: IAConnect
+  description: Gateway multi-tenant de IA conversacional (chat/completion/analyze/summarize/improve) sobre .NET 8.
+  regulated: false       # true activaría el perfil A.17 (mapeo regulatorio)
+  stack: [".NET 8", "ASP.NET Core", "Blazor", "SQL Server 2022", "Docker"]
+
+# -----------------------------------------------------------------------------
+# PIEZAS — cada una con su type (§7) y required_docs (documentos exigidos por su perfil)
+# -----------------------------------------------------------------------------
+pieces:
+  - id: IAConnect.Domain
+    type: library
+    path: IAConnect.Domain/
+    criticality: high
+    required_docs: [readme, changelog, api-reference]
+    generated: [readme]
+    gap: [changelog, api-reference]
+
+  - id: IAConnect.Application
+    type: library
+    path: IAConnect.Application/
+    criticality: high
+    required_docs: [readme, changelog, api-reference]
+    generated: [readme]
+    gap: [changelog, api-reference]
+
+  - id: IAConnect.Infrastructure
+    type: library
+    path: IAConnect.Infrastructure/
+    criticality: high
+    required_docs: [readme, changelog, api-reference, snippets]
+    generated: [readme]
+    gap: [changelog, api-reference]
+
+  - id: IAConnect.API
+    type: service
+    path: IAConnect.API/
+    criticality: critical
+    required_docs: [readme, changelog, openapi, runbook]
+    generated: [readme, openapi, runbook]
+    gap: [changelog]
+
+  - id: IAConnect.ChatWidget
+    type: component-library
+    path: IAConnect.ChatWidget/
+    criticality: medium
+    required_docs: [readme, changelog, component-catalog, migration-guide, a11y-statement]
+    generated: [readme, component-catalog]
+    gap: [changelog, migration-guide, a11y-statement]
+
+  - id: IAConnect.Demo.Web
+    type: web-portal
+    path: IAConnect.Demo.Web/
+    criticality: low
+    required_docs: [readme, routes-map, a11y-statement]
+    generated: [readme, routes-map]
+    gap: [a11y-statement]
+
+  - id: IAConnect.Example
+    type: library         # sample / PoC de integración
+    path: IAConnect.Example/
+    criticality: low
+    required_docs: [readme]
+    generated: [readme]
+    gap: []
+
+  - id: IAConnect.Tests
+    type: test-support
+    path: IAConnect.Tests/
+    criticality: medium
+    required_docs: [readme]
+    generated: [readme]
+    gap: []
+
+  - id: IAConnect.Database
+    type: database
+    path: scripts/01_create_database.sql
+    criticality: critical
+    required_docs: [data-dictionary, er-model, access-policies, test-data-matrix]
+    generated: [data-dictionary, er-model, access-policies, test-data-matrix]
+    gap: []
+    notes: >
+      Documentado por introspección del DDL (scripts/01_create_database.sql) + Models/DataManagers.
+      SIN acceso en vivo a la base de datos (no se proveyeron cadenas de conexión): no hay ejemplos con datos
+      reales; los fixtures son sintéticos. Gap de introspección en vivo declarado.
+
+# -----------------------------------------------------------------------------
+# TIPOS DE DOCUMENTO — dónde vive cada uno, plantilla de referencia y vigencia
+# -----------------------------------------------------------------------------
+doc_types:
+  readme:
+    path_pattern: "docs/pieces/*/README.md"
+    max_age_days: 180
+  openapi:
+    path_pattern: "docs/05-apis/openapi.yaml"
+    max_age_days: 90
+  runbook:
+    path_pattern: "docs/07-operations/*.md"
+    max_age_days: 180
+  component-catalog:
+    path_pattern: "docs/pieces/IAConnect.ChatWidget/component-catalog.md"
+    max_age_days: 120
+  routes-map:
+    path_pattern: "docs/pieces/IAConnect.Demo.Web/routes-map.md"
+    max_age_days: 180
+  data-dictionary:
+    path_pattern: "docs/03-data/data-dictionary.md"
+    max_age_days: 120
+  er-model:
+    path_pattern: "docs/03-data/er-diagrams/*.dbml"
+    max_age_days: 120
+  access-policies:
+    path_pattern: "docs/03-data/access-policies.md"
+    max_age_days: 180
+  test-data-matrix:
+    path_pattern: "docs/03-data/test-data-matrix.md"
+    max_age_days: 120
+  adr:
+    path_pattern: "docs/04-decisions/*.md"
+    max_age_days: 365
+  architecture:
+    path_pattern: "docs/01-architecture/*.md"
+    max_age_days: 180
+
+# -----------------------------------------------------------------------------
+# NIVEL SOLUCIÓN — documentos transversales generados
+# -----------------------------------------------------------------------------
+solution_docs:
+  generated:
+    - docs/00-overview/vision.md
+    - docs/00-overview/system-map.md
+    - docs/01-architecture/01-context.md
+    - docs/01-architecture/02-containers.md
+    - docs/01-architecture/03-components.md
+    - docs/01-architecture/04-runtime-views.md
+    - docs/01-architecture/05-deployment.md
+    - docs/01-architecture/06-crosscutting.md
+    - docs/02-requirements/functional-overview.md
+    - docs/02-requirements/non-functional.md
+    - docs/02-requirements/traceability-matrix.md
+    - docs/03-data/data-dictionary.md
+    - docs/03-data/er-diagrams/iaconnect.dbml
+    - docs/03-data/access-policies.md
+    - docs/03-data/test-data-matrix.md
+    - docs/03-data/fixtures/tenants.seed.yaml
+    - docs/04-decisions/  # ADR-0001..ADR-0006
+    - docs/05-apis/catalog.md
+    - docs/05-apis/openapi.yaml
+    - docs/07-operations/runbook-api.md
+    - docs/08-onboarding/developer-setup.md
+
+# -----------------------------------------------------------------------------
+# POLÍTICA DE AGENTES Y GAP GLOBAL
+# -----------------------------------------------------------------------------
+agent_policy: docs/09-agents/agent-policy.md   # (ver README maestro; política mínima §12.4 aplicada)
+
+known_gaps:
+  - id: GAP-DB-LIVE
+    description: Sin introspección en vivo de la base de datos (no se proveyeron cadenas de conexión). El modelo se documentó desde el DDL y el código; no hay ejemplos con datos productivos.
+    severity: media
+  - id: GAP-CHANGELOG
+    description: Las piezas no tienen CHANGELOG.md en el origen; no se reconstruye historial de versiones (requiere análisis de git y decisión humana de versión inicial).
+    severity: baja
+  - id: GAP-APIREF
+    description: Referencia de API generada (docstrings→referencia) de las librerías pendiente de herramienta (DocFX); los README de pieza cubren la API pública principal.
+    severity: baja
+  - id: GAP-A11Y
+    description: Declaración de accesibilidad (WCAG) de Widget y Demo.Web pendiente de auditoría de accesibilidad real.
+    severity: media
+
+  # --- Divergencias código <-> diseño/doc detectadas en la documentación (código gana; requieren decisión humana) ---
+  - id: GAP-RAG-SEMANTIC
+    description: >
+      El RAG implementado es recuperación léxica TF-IDF en memoria, NO embeddings/similitud coseno como describe
+      rag-spec_v1.0.md; Vector_Embedding se guarda null y SerializeEmbedding es código muerto. Ver ADR-0006.
+    severity: alta
+  - id: GAP-ENC-FALLBACK
+    description: >
+      El cifrado AES de lut_Tenants.ApiKey_IA usa la clave de la env var IACONNECT_ENCRYPTION_KEY; si falta, hay
+      fallback a texto plano (API key en claro en la BD). Además appsettings declara Encryption:AesKey (no usado) y
+      compose pasa Encryption__Key: nombres inconsistentes. Requiere hardening.
+    severity: alta
+  - id: GAP-CONFIG-MODEL
+    description: >
+      La sección AIProviders:*:DefaultModel de appsettings.json no se consume; el modelo efectivo sale de
+      lut_Tenants.Nombre_Modelo. Config potencialmente confusa/muerta.
+    severity: baja
+  - id: GAP-LAYER-INVERSION
+    description: >
+      IAConnect.Infrastructure.csproj referencia a IAConnect.Application (Infra->App), invirtiendo la regla de
+      dependencia de Clean Architecture. Ver ADR-0001.
+    severity: media
+  - id: GAP-DB-INTEGRITY
+    description: >
+      Reglas de integridad solo en app: sys_Metricas_Uso.Proveedor y sys_Mensajes.Proveedor_Usado sin CHECK;
+      sin Row-Level Security (aislamiento multi-tenant depende del código); FKs NO ACTION (sin cascada); sin
+      política de retención/purga.
+    severity: media
+  - id: GAP-TEST-COVERAGE
+    description: >
+      Sin tests: KnowledgeService/Controller, cifrado de API key, persistencia de métricas, providers concretos;
+      solo /completion cubierto en integración; GlobalExceptionMiddleware solo verifica InvalidCredentials->401;
+      RAGEngine solo prueba el fallback. Sin pruebas contra SQL Server real.
+    severity: media
+  - id: GAP-CREDS-IN-REPO
+    description: >
+      Riesgo de exposición: appsettings.Development.json versiona una cadena con credenciales; el encabezado de
+      scripts/01_create_database.sql trae servidor/usuario/clave de ejemplo; compose usa sa/TrustServerCertificate.
+      No reproducidos en la documentación; requieren limpieza/rotación en el origen.
+    severity: alta
+
+validation:
+  - "Toda pieza del origen figura con type y required_docs."
+  - "El gap por pieza = required_docs − generated."
+  - "Ningún entregable contiene credenciales, API keys ni datos productivos."
+  - "Todo documento está en status: draft, origin: reverse-engineered."
