@@ -1,17 +1,12 @@
 > **Documento de análisis — Administrator Guide (Ng-IAServices / IAConnect).**
 >
-> **Propósito.** Dar al **administrador funcional** del servicio el procedimiento completo para (a) dar de alta y
-> configurar un *tenant*, (b) **redactar su system prompt**, (c) **cargar, editar y curar la base de conocimiento (KB)**
-> que alimenta el RAG, y (d) validar y diagnosticar la calidad de las respuestas. El eje es la **metodología reusable**:
-> los ejemplos alternan **GDA-Turnos** (gobierno digital municipal) y **Boletería-Eventos** (venta de boletería digital),
-> pero el procedimiento es el mismo para cualquier caso de éxito nuevo.
+> **Propósito.** Dar al **administrador funcional** del servicio el procedimiento completo para (a) dar de alta y configurar un *tenant*, (b) **redactar su system prompt**, (c) **cargar, editar y curar la base de conocimiento (KB)** que alimenta el RAG, y (d) validar y diagnosticar la calidad de las respuestas. El eje es la **metodología reusable**: los ejemplos alternan **GDA-Turnos** (gobierno digital municipal) y **Boletería-Eventos** (venta de boletería digital), pero el procedimiento es el mismo para cualquier caso de éxito nuevo.
 >
 > **Alcance.** Lo que se hace **por API/pantalla contra IAConnect**, sin tocar infraestructura ni código.
 > Queda fuera: despliegue, backups, rotación de secretos y observabilidad de plataforma → ver
 > [`05-Operations-Guide.md`](05-Operations-Guide.md). Diseño interno del pipeline → [`03-LLD.md`](03-LLD.md).
 >
-> **Audiencia.** Administrador funcional / dueño de contenido / analista de conocimiento. Secundariamente:
-> agentes IA que consuman este documento como procedimiento ejecutable (§0.2 provee tabla de navegación y contratos).
+> **Audiencia.** Administrador funcional / dueño de contenido / analista de conocimiento. Secundariamente: agentes IA que consuman este documento como procedimiento ejecutable (§0.2 provee tabla de navegación y contratos).
 >
 > **Estado.** Análisis sobre código relevado. Convención de marcas del antecedente
 > [`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md):
@@ -24,21 +19,21 @@
 
 ### 0.1 Tabla de contenidos
 
-| § | Sección | Para quién / cuándo |
-|---|---|---|
-| [1](#1-introducción-audiencia-y-roles) | Introducción, audiencia y roles | Primera lectura; entender qué puedo hacer |
-| [2](#2-alta-y-configuración-de-un-tenant) | Alta y configuración de un tenant | Montar un caso de éxito nuevo |
-| [3](#3-redacción-del-system-prompt-del-tenant) | Redacción del system prompt | Definir dominio, límites y tono |
-| [4](#4-gestión-de-la-base-de-conocimiento) | Gestión de la base de conocimiento | Subir / editar / reemplazar / borrar KB |
-| [5](#5-cómo-escribir-buen-contenido-de-kb-para-rag) | Guía de estilo de contenido para RAG | Antes de redactar cualquier documento |
-| [6](#6-curado-y-ciclo-de-vida-del-contenido) | Curado y ciclo de vida | Gobierno del contenido en el tiempo |
-| [7](#7-kb-por-jerarquía-de-usuarios) | KB por jerarquía de usuarios | Segmentar ciudadano vs. backoffice |
-| [8](#8-pruebas-de-la-kb) | Pruebas de la KB | Antes de publicar un cambio |
-| [9](#9-diagnóstico-de-problemas-de-calidad) | Diagnóstico de problemas de calidad | El asistente responde mal |
-| [10](#10-usuarios-roles-y-accesos) | Usuarios, roles y accesos | Dar acceso a alguien |
-| [11](#11-lectura-de-métricas-y-feedback) | Métricas y feedback | Decidir qué agregar a la KB |
-| [12](#12-checklist-del-administrador) | Checklist diario/semanal/mensual | Rutina operativa |
-| [13](#13-trazabilidad-de-evidencia) | Trazabilidad de evidencia | Verificar cada afirmación |
+| §                                                   | Sección                              | Para quién / cuándo                       |
+| --------------------------------------------------- | ------------------------------------ | ----------------------------------------- |
+| [1](#1-introducción-audiencia-y-roles)              | Introducción, audiencia y roles      | Primera lectura; entender qué puedo hacer |
+| [2](#2-alta-y-configuración-de-un-tenant)           | Alta y configuración de un tenant    | Montar un caso de éxito nuevo             |
+| [3](#3-redacción-del-system-prompt-del-tenant)      | Redacción del system prompt          | Definir dominio, límites y tono           |
+| [4](#4-gestión-de-la-base-de-conocimiento)          | Gestión de la base de conocimiento   | Subir / editar / reemplazar / borrar KB   |
+| [5](#5-cómo-escribir-buen-contenido-de-kb-para-rag) | Guía de estilo de contenido para RAG | Antes de redactar cualquier documento     |
+| [6](#6-curado-y-ciclo-de-vida-del-contenido)        | Curado y ciclo de vida               | Gobierno del contenido en el tiempo       |
+| [7](#7-kb-por-jerarquía-de-usuarios)                | KB por jerarquía de usuarios         | Segmentar ciudadano vs. backoffice        |
+| [8](#8-pruebas-de-la-kb)                            | Pruebas de la KB                     | Antes de publicar un cambio               |
+| [9](#9-diagnóstico-de-problemas-de-calidad)         | Diagnóstico de problemas de calidad  | El asistente responde mal                 |
+| [10](#10-usuarios-roles-y-accesos)                  | Usuarios, roles y accesos            | Dar acceso a alguien                      |
+| [11](#11-lectura-de-métricas-y-feedback)            | Métricas y feedback                  | Decidir qué agregar a la KB               |
+| [12](#12-checklist-del-administrador)               | Checklist diario/semanal/mensual     | Rutina operativa                          |
+| [13](#13-trazabilidad-de-evidencia)                 | Trazabilidad de evidencia            | Verificar cada afirmación                 |
 
 ### 0.2 Tabla de navegación para agentes IA
 
@@ -103,18 +98,17 @@ flowchart LR
 🟩 Solo existen **dos roles**, con `CHECK IN ('admin','operador')` en `sys_Usuarios.Rol`
 (`scripts/01_create_database.sql:58-196`), y el enum `RolUsuario{Admin, Operador}` (`IAConnect.Domain/Enums/RolUsuario.cs`).
 
-🟩 El corte de tenant ocurre en `TenantAccessFilter` (`IAConnect.API/Middleware/TenantAccessFilter.cs:12-47`):
-si `rol == "admin"` (comparación `OrdinalIgnoreCase`) **pasa sin restricción a cualquier tenant**; si no,
-exige `claim id_tenant == route tenantId` o devuelve **403** `{error="No tiene acceso a este tenant."}`.
+🟩 El corte de tenant ocurre en `TenantAccessFilter` ( `IAConnect.API/Middleware/TenantAccessFilter.cs:12-47`):
+si `rol == "admin"` (comparación `OrdinalIgnoreCase`) **pasa sin restricción a cualquier tenant**; si no, exige `claim id_tenant == route tenantId` o devuelve **403** `{error="No tiene acceso a este tenant."}`.
 
 **Matriz de permisos efectiva** (🟩 derivada de los atributos de cada controlador):
 
-| Recurso | Endpoint | Atributos | `admin` | `operador` |
-|---|---|---|---|---|
-| Chat y funciones IA | `POST /api/ai/{tenantId}/{chat\|completion\|analyze\|summarize\|improve}` | `[Authorize]` + `[ServiceFilter(TenantAccessFilter)]` | ✅ cualquier tenant | ✅ **solo su** `id_tenant` |
-| Tenants (CRUD) | `/api/tenants` | `[Authorize(Roles="admin")]` | ✅ | ❌ 403 |
-| **Base de conocimiento** | `/api/tenants/{tenantId}/knowledge` | `[Authorize(Roles="admin")]` — ⚠ **sin** `TenantAccessFilter` | ✅ **cualquier tenant** | ❌ 403 |
-| Auth (login/refresh/logout) | `/api/auth` | público / `[Authorize]` | ✅ | ✅ |
+| Recurso                     | Endpoint                                                                  | Atributos                                                     | `admin`                | `operador`                |
+| --------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------- | ------------------------- |
+| Chat y funciones IA         | `POST /api/ai/{tenantId}/{chat\|completion\|analyze\|summarize\|improve}` | `[Authorize]` + `[ServiceFilter(TenantAccessFilter)]`         | ✅ cualquier tenant     | ✅ **solo su** `id_tenant` |
+| Tenants (CRUD)              | `/api/tenants`                                                            | `[Authorize(Roles="admin")]`                                  | ✅                      | ❌ 403                     |
+| **Base de conocimiento**    | `/api/tenants/{tenantId}/knowledge`                                       | `[Authorize(Roles="admin")]` — ⚠ **sin** `TenantAccessFilter` | ✅ **cualquier tenant** | ❌ 403                     |
+| Auth (login/refresh/logout) | `/api/auth`                                                               | público / `[Authorize]`                                       | ✅                      | ✅                         |
 
 🟩 Evidencia: `AIController.cs:12-134` declara
 `[Route("api/ai/{tenantId}")][Authorize][ServiceFilter(typeof(TenantAccessFilter))]`;
@@ -140,8 +134,7 @@ stateDiagram-v2
     end note
 ```
 
-🟩 `AuthService.cs:25-26,42-186`: `MaxLoginAttempts = 5`, `LockoutMinutes = 15`, verificación con
-`BCrypt.Net.BCrypt.Verify`, y `AccountLockedException` → **423** en `GlobalExceptionMiddleware.cs:32-41`.
+🟩 `AuthService.cs:25-26,42-186`: `MaxLoginAttempts = 5`, `LockoutMinutes = 15`, verificación con `BCrypt.Net.BCrypt.Verify`, y `AccountLockedException` → **423** en `GlobalExceptionMiddleware.cs:32-41`.
 
 ### 1.3 Qué NO puede hacer el administrador hoy (límites conocidos)
 
@@ -164,12 +157,9 @@ stateDiagram-v2
 
 ### 2.1 Qué es un tenant
 
-🟨 Un **tenant** es una *personalidad de asistente*: un identificador de negocio + su proveedor de IA + su
-prompt + su KB + sus reglas de imagen. Un mismo sistema consumidor puede tener **varios** tenants si necesita
-varias personalidades (p. ej. `gda-turnos-ciudadano` y `gda-turnos-backoffice`, ver §7).
+🟨 Un **tenant** es una *personalidad de asistente*: un identificador de negocio + su proveedor de IA + su prompt + su KB + sus reglas de imagen. Un mismo sistema consumidor puede tener **varios** tenants si necesita varias personalidades (p. ej. `gda-turnos-ciudadano` y `gda-turnos-backoffice`, ver §7).
 
-🟩 `lut_Tenants.Id_Tenant` es `varchar(50)` **PK y clave de negocio** (no surrogate), y no tiene FKs salientes:
-es la **raíz del particionado multi-tenant** (`scripts/01_create_database.sql:31-53`).
+🟩 `lut_Tenants.Id_Tenant` es `varchar(50)` **PK y clave de negocio** (no surrogate), y no tiene FKs salientes: es la **raíz del particionado multi-tenant** (`scripts/01_create_database.sql:31-53`).
 
 ```mermaid
 erDiagram
@@ -377,9 +367,7 @@ excepción, y los mensajes de excepciones se devuelven al cliente en el 502 (`Cl
 | `0.6 – 0.8` | Default del sistema (0.7). Variedad conversacional | Asistentes generalistas, no de trámites |
 | `0.9 – 1.0` | Creativo | Redacción/brainstorm. **Nunca** para información normativa |
 
-🟨 **Regla de decisión:** si una respuesta errónea del asistente genera un **trámite mal hecho** (turno perdido,
-evento mal publicado), usá `0.2–0.3`. El default `0.7` está pensado para chat genérico y es **demasiado alto**
-para ambos casos de éxito objetivo.
+🟨 **Regla de decisión:** si una respuesta errónea del asistente genera un **trámite mal hecho** (turno perdido, evento mal publicado), usá `0.2–0.3`. El default `0.7` está pensado para chat genérico y es **demasiado alto** para ambos casos de éxito objetivo.
 
 ### 2.7 Max_Tokens y el presupuesto de contexto
 
@@ -400,29 +388,21 @@ flowchart TD
     style H2 fill:#ffe0e0,stroke:#c00
 ```
 
-⚠ 🟩 **El historial se envía DOS veces.** `ChatService.cs:102` pasa `history` a `BuildSystemPromptAsync`
-(que lo embebe como texto bajo `[HISTORIAL DE CONVERSACIÓN]`) y `ChatService.cs:112` pasa el **mismo**
-`history` como `ConversationHistory` del `ChatRequest`, que `ClaudeProvider.BuildMessages` vuelca como
-mensajes reales del array `messages` (`ClaudeProvider.cs:124-134`), mientras el system prompt viaja en el
-campo `system` (`ClaudeProvider.cs:183`).
+⚠ 🟩 **El historial se envía DOS veces.** `ChatService.cs:102` pasa `history` a `BuildSystemPromptAsync`(que lo embebe como texto bajo `[HISTORIAL DE CONVERSACIÓN]`) y `ChatService.cs:112` pasa el **mismo** `history` como `ConversationHistory` del `ChatRequest`, que `ClaudeProvider.BuildMessages` vuelca como mensajes reales del array `messages` (`ClaudeProvider.cs:124-134`), mientras el system prompt viaja en el campo `system` (`ClaudeProvider.cs:183`).
 
-🟨 **Impacto para el admin:** el costo de tokens de prompt del historial está **duplicado** y las conversaciones
-largas degradan coherencia y presupuesto. Mientras el defecto no se corrija (ver [`03-LLD.md`](03-LLD.md)),
-mantené el system prompt **corto** (≤300 palabras) y las secciones de KB **compactas** (§5, R7).
+🟨 **Impacto para el admin:** el costo de tokens de prompt del historial está **duplicado** y las conversaciones largas degradan coherencia y presupuesto. Mientras el defecto no se corrija (ver [`03-LLD.md`](03-LLD.md)), mantené el system prompt **corto** (≤300 palabras) y las secciones de KB **compactas** (§5, R7).
 
-⚠ 🟩 **Y la unidad del chunk son palabras, no tokens** (`KnowledgeService.cs:16-17,103-121`): 400 palabras ≈
-520–600 tokens en español. 🟨 El presupuesto real de RAG es ~30–50% mayor de lo que sugiere la constante.
+⚠ 🟩 **Y la unidad del chunk son palabras, no tokens** (`KnowledgeService.cs:16-17,103-121`): 400 palabras ≈520–600 tokens en español. 🟨 El presupuesto real de RAG es ~30–50% mayor de lo que sugiere la constante.
 
-| 🟨 Valor sugerido `maxTokens` | Caso |
-|---|---|
-| `800 – 1200` | Respuestas de trámite: pasos, requisitos, un checklist. **GDA-Turnos** |
-| `1500 – 2000` | Diagnóstico con enumeración de causas. **Boletería-Eventos** ("¿por qué no se publicó mi evento?") |
-| `4000` (default) | 🟨 Excesivo para asistencia sobre KB: habilita respuestas-muro que nadie lee (ver antecedente, bloque E4 "cargar pantalla") |
+| 🟨 Valor sugerido `maxTokens` | Caso                                                                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `800 – 1200`                  | Respuestas de trámite: pasos, requisitos, un checklist. **GDA-Turnos**                                                      |
+| `1500 – 2000`                 | Diagnóstico con enumeración de causas. **Boletería-Eventos** ("¿por qué no se publicó mi evento?")                          |
+| `4000` (default)              | 🟨 Excesivo para asistencia sobre KB: habilita respuestas-muro que nadie lee (ver antecedente, bloque E4 "cargar pantalla") |
 
 ### 2.8 Imágenes: `PermiteImagenes`, tamaño y formatos
 
-🟩 `ImageValidator` (`ImageValidator.cs:16-48`) valida **tres cosas** contra el tenant y cualquier falla lanza
-`ImageNotAllowedException` → **400** (`GlobalExceptionMiddleware.cs:32-41`):
+🟩 `ImageValidator` (`ImageValidator.cs:16-48`) valida **tres cosas** contra el tenant y cualquier falla lanza `ImageNotAllowedException` → **400** (`GlobalExceptionMiddleware.cs:32-41`):
 
 1. `tenant.PermiteImagenes` — si es `false`, se rechaza sin más.
 2. `tenant.MaxTamanoImagenKB` — el tamaño se **estima** desde el Base64: `(len * 3) / 4 / 1024`.
@@ -438,13 +418,10 @@ mantené el system prompt **corto** (≤300 palabras) y las secciones de KB **co
 | `R0lGO` | GIF | — (no mapeado; default `image/png`) |
 | otro | `UNKNOWN` → 400 | default `image/png` |
 
-🟩 `ClaudeProvider.DetectImageMimeType` mapea `/9j/`→`image/jpeg`, `iVBOR`→`image/png`, `UklGR`→`image/webp`,
-default `image/png` (`ClaudeProvider.cs:245-251`), y `BuildMessages` arma el content array con
-`{type:"image", source:{type:"base64", media_type, data}}` seguido de `{type:"text", text: prompt}`
-(`ClaudeProvider.cs:136-170`).
+🟩 `ClaudeProvider.DetectImageMimeType` mapea `/9j/`→`image/jpeg`, `iVBOR`→`image/png`, `UklGR`→`image/webp`, default `image/png` (`ClaudeProvider.cs:245-251`), y `BuildMessages` arma el content array con `{type:"image", source:{type:"base64", media_type, data}}` seguido de `{type:"text", text: prompt}` (`ClaudeProvider.cs:136-170`).
 
 ⚠ 🟨 `R0lGO` (GIF) **pasa** `ImageValidator` si lo incluís en `FormatosImagenPermitidos`, pero
-`ClaudeProvider` lo enviará declarado como `image/png` → el proveedor probablemente rechace → **502**.
+`ClaudeProvider` lo enviará declarado como `image/png` → el proveedor probablemente rechace → **502**. 
 **No incluyas GIF** en `Formatos_Imagen_Permitidos`. Dejá el default `PNG,JPG,WEBP`.
 
 | 🟨 Decisión | GDA-Turnos | Boletería-Eventos |
@@ -543,21 +520,21 @@ y *hand-off*. 🟩 El patrón de hand-off y de *disclosure de alcance* está obs
 
 ### 3.3 Buenas prácticas y anti-patrones
 
-| # | Práctica | Por qué acá específicamente |
-|---|---|---|
-| SP-1 | **Lista cerrada de temas**, no abierta | 🟨 "Ayudás con turnos y temas relacionados" → "relacionados" lo interpreta el modelo |
-| SP-2 | **Anclá al `[CONTEXTO RELEVANTE]` por su nombre literal** | 🟩 Ese es el delimitador exacto que emite `PromptBuilder.cs:16-54` |
-| SP-3 | **Prohibí explícitamente el conocimiento general** | 🟨 Sin esto, el modelo completa con normativa genérica que no aplica al municipio |
-| SP-4 | **Instrucción explícita de "no sé"** | 🟩 Crítico con RAG léxico (I-1): un sinónimo faltante deja el contexto vacío y el modelo tiende a rellenar |
-| SP-5 | **Acotá la longitud en el prompt** | 🟩 `maxTokens` **corta**, no resume: la respuesta queda truncada a mitad de frase |
-| SP-6 | **Definí el hand-off con un canal concreto** | 🟦 Sin salida, el asistente inventa una |
-| SP-7 | **Mantenelo ≤300 palabras** | 🟩 El prompt compite con 5 fragmentos + historial **duplicado** (§2.7) |
-| SP-8 | **Defensa anti-extracción de prompt** | 🟩 Es la única defensa: no hay guardrail de salida en el código |
-| ❌ AP-1 | Meter **la KB dentro del prompt** | 🟩 Para eso está el RAG; además se envía en cada request |
-| ❌ AP-2 | Poner **datos que cambian** (precios, fechas, cupos) | 🟩 No hay tools: el prompt sería la única fuente y quedaría viejo |
-| ❌ AP-3 | Instrucciones contradictorias ("sé breve" + "explicá en detalle") | 🟦 El modelo elige una, no sabés cuál |
-| ❌ AP-4 | Emojis y adornos | Convención del proyecto: tono técnico profesional |
-| ❌ AP-5 | Usar los literales `[…]` de los delimitadores | 🟩 Ver PI-1 (§3.1) |
+| #      | Práctica                                                          | Por qué acá específicamente                                                                                |
+| ------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| SP-1   | **Lista cerrada de temas**, no abierta                            | 🟨 "Ayudás con turnos y temas relacionados" → "relacionados" lo interpreta el modelo                       |
+| SP-2   | **Anclá al `[CONTEXTO RELEVANTE]` por su nombre literal**         | 🟩 Ese es el delimitador exacto que emite `PromptBuilder.cs:16-54`                                         |
+| SP-3   | **Prohibí explícitamente el conocimiento general**                | 🟨 Sin esto, el modelo completa con normativa genérica que no aplica al municipio                          |
+| SP-4   | **Instrucción explícita de "no sé"**                              | 🟩 Crítico con RAG léxico (I-1): un sinónimo faltante deja el contexto vacío y el modelo tiende a rellenar |
+| SP-5   | **Acotá la longitud en el prompt**                                | 🟩 `maxTokens` **corta**, no resume: la respuesta queda truncada a mitad de frase                          |
+| SP-6   | **Definí el hand-off con un canal concreto**                      | 🟦 Sin salida, el asistente inventa una                                                                    |
+| SP-7   | **Mantenelo ≤300 palabras**                                       | 🟩 El prompt compite con 5 fragmentos + historial **duplicado** (§2.7)                                     |
+| SP-8   | **Defensa anti-extracción de prompt**                             | 🟩 Es la única defensa: no hay guardrail de salida en el código                                            |
+| ❌ AP-1 | Meter **la KB dentro del prompt**                                 | 🟩 Para eso está el RAG; además se envía en cada request                                                   |
+| ❌ AP-2 | Poner **datos que cambian** (precios, fechas, cupos)              | 🟩 No hay tools: el prompt sería la única fuente y quedaría viejo                                          |
+| ❌ AP-3 | Instrucciones contradictorias ("sé breve" + "explicá en detalle") | 🟦 El modelo elige una, no sabés cuál                                                                      |
+| ❌ AP-4 | Emojis y adornos                                                  | Convención del proyecto: tono técnico profesional                                                          |
+| ❌ AP-5 | Usar los literales `[…]` de los delimitadores                     | 🟩 Ver PI-1 (§3.1)                                                                                         |
 
 ### 3.4 Interacción con `Mensaje_Bienvenida`
 
@@ -1866,12 +1843,13 @@ Activo bit)` (`scripts/01_create_database.sql:58-196`).
 
 ### 10.2 Crear un usuario
 
-| Ítem | Valor |
-|---|---|
-| Ruta | `POST /api/auth/usuarios` (rol admin) — 🟩 `AuthController` (`/api/auth`) |
-| DTO | `CreateUsuarioRequestDto` — 🟩 uno de los 11 request DTOs en `IAConnect.Application/DTOs/Requests/` |
-| Password | 🟩 Se hashea con **BCrypt** (`AuthService.cs:42-186`) |
-| Listar usuarios | ⚠ `GET /api/auth/usuarios` está **roto** — ver §10.3 |
+| Ítem            | Valor                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| Ruta            | `POST /api/auth/usuarios` (rol admin) — 🟩 `AuthController` (`/api/auth`)                           |
+| DTO             | `CreateUsuarioRequestDto` — 🟩 uno de los 11 request DTOs en `IAConnect.Application/DTOs/Requests/` |
+| Password        | 🟩 Se hashea con **BCrypt** (`AuthService.cs:42-186`)                                               |
+| Listar usuarios | ⚠ `GET /api/auth/usuarios` está **roto** — ver §10.3                                                |
+|                 |                                                                                                     |
 
 🟨 **Regla de asignación:** todo usuario de aplicación (el que usa el widget) debe ser **`operador` con
 `Id_Tenant` seteado**. Es la única combinación que produce aislamiento real: 🟩 `TenantAccessFilter` exige

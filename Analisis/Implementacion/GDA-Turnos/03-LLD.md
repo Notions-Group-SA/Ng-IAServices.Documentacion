@@ -54,12 +54,9 @@
 
 El caso de éxito objetivo, en palabras del solicitante, es:
 
-> *"Un ciudadano podría consultar si hay turno para un trámite específico y el chatbot le podría indicar que existe
-> ese trámite o en realidad se llama diferente e indicarle opciones y posibles enlaces hacia la página de solicitud
-> de turno."*
+> *"Un ciudadano podría consultar si hay turno para un trámite específico y el chatbot le podría indicar que existe ese trámite o en realidad se llama diferente e indicarle opciones y posibles enlaces hacia la página de solicitud de turno."*
 
-Ese enunciado, traducido a ingeniería, se descompone en **cuatro capacidades** y este LLD especifica cada una a
-nivel de contrato y código:
+Ese enunciado, traducido a ingeniería, se descompone en **cuatro capacidades** y este LLD especifica cada una a nivel de contrato y código:
 
 | # | Capacidad del enunciado | Mecanismo técnico | Sección |
 |---|---|---|---|
@@ -68,37 +65,29 @@ nivel de contrato y código:
 | 3 | *"indicarle opciones"* | **desambiguación** con top-N candidatos y score | §4.2, §10 |
 | 4 | *"posibles enlaces hacia la página de solicitud de turno"* | **contrato de deep-links** construido y validado server-side | §8 |
 
-🟨 El punto 2 es el corazón del caso y también su mayor riesgo: **es la capacidad que el sistema anfitrión no tiene
-hoy de ninguna forma** y que, por lo tanto, el asistente aporta como valor neto. Todo lo demás (listar trámites,
-mostrar requisitos, linkear a la página) ya existe en la UI; lo que no existe es *entender que el vecino dice
-"registro de manejar" cuando el catálogo dice "Licencia de Conducir"*.
+🟨 El punto 2 es el corazón del caso y también su mayor riesgo: **es la capacidad que el sistema anfitrión no tiene hoy de ninguna forma** y que, por lo tanto, el asistente aporta como valor neto. Todo lo demás (listar trámites, mostrar requisitos, linkear a la página) ya existe en la UI; lo que no existe es *entender que el vecino dice "registro de manejar" cuando el catálogo dice "Licencia de Conducir"*.
 
 **Hallazgo que condiciona todo el diseño:**
 
-> 🟩 **NO existe function-calling/tools en IAConnect en ninguna forma.** Grep verificado sobre `tool_use`,
-> `tool_choice` y `function_call` en toda la solución: cero resultados. La inyección de datos dinámicos ocurre
-> hoy únicamente vía *system prompt* e historial (`PromptBuilder.cs:16-54`, `ChatService.cs:46-189`).
+> 🟩 **NO existe function-calling/tools en IAConnect en ninguna forma.** Grep verificado sobre `tool_use`, `tool_choice` y `function_call` en toda la solución: cero resultados. La inyección de datos dinámicos ocurre hoy únicamente vía *system prompt* e historial (`PromptBuilder.cs:16-54`, `ChatService.cs:46-189`).
 >
-> 🟩 **NO existe API REST de turnos que sirva de tool.** El único endpoint de turnos en `GDA.Core.API` es
-> `POST Turnos/ProcesarRecordatorios`, **sin autenticación**, que solo dispara notificaciones
-> (`ia-db/indexes/02_apis-servicios.md` §1). No hay consulta, alta ni cancelación expuestas.
+> 🟩 **NO existe API REST de turnos que sirva de tool.** El único endpoint de turnos en `GDA.Core.API` es `POST Turnos/ProcesarRecordatorios`, **sin autenticación**, que solo dispara notificaciones (`ia-db/indexes/02_apis-servicios.md` §1). No hay consulta, alta ni cancelación expuestas.
 
-🟨 Conclusión de ingeniería: este caso requiere construir **dos piezas nuevas** — (a) la capa de *tools* en
-IAConnect, (b) la API de turnos en GDA que esas tools consumen. Ninguna de las dos existe. Este LLD las especifica.
+🟨 Conclusión de ingeniería: este caso requiere construir **dos piezas nuevas** — (a) la capa de *tools* en IAConnect, (b) la API de turnos en GDA que esas tools consumen. Ninguna de las dos existe. Este LLD las especifica.
 
 ### 1.2 Documentos hermanos y referencias
 
 **Bloque del caso (este directorio):**
 
-| Documento | Qué aporta a este LLD |
-|---|---|
-| [`01-SAD.md`](01-SAD.md) | Contexto, drivers, vistas de arquitectura, atributos de calidad del caso |
-| [`02-HLD.md`](02-HLD.md) | Componentes, flujos conversacionales, decisión RAG-vs-tools a alto nivel |
-| **`03-LLD.md`** | *(este)* Contratos, esquemas, código, prompts literales, pruebas |
-| [`04-ADR.md`](04-ADR.md) | Decisiones registradas (p.ej. por qué tools y no solo RAG) |
-| [`05-Operations-Guide.md`](05-Operations-Guide.md) | Despliegue, monitoreo, runbooks del caso |
-| [`06-Administrator-Guide.md`](06-Administrator-Guide.md) | Alta del tenant, carga de KB, edición de sinónimos |
-| [`07-Plan-Sprints-Capacitacion.md`](07-Plan-Sprints-Capacitacion.md) | Secuencia de entrega y capacitación |
+| Documento                                                            | Qué aporta a este LLD                                                    |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`01-SAD.md`](01-SAD.md)                                             | Contexto, drivers, vistas de arquitectura, atributos de calidad del caso |
+| [`02-HLD.md`](02-HLD.md)                                             | Componentes, flujos conversacionales, decisión RAG-vs-tools a alto nivel |
+| **`03-LLD.md`**                                                      | *(este)* Contratos, esquemas, código, prompts literales, pruebas         |
+| [`04-ADR.md`](04-ADR.md)                                             | Decisiones registradas (p.ej. por qué tools y no solo RAG)               |
+| [`05-Operations-Guide.md`](05-Operations-Guide.md)                   | Despliegue, monitoreo, runbooks del caso                                 |
+| [`06-Administrator-Guide.md`](06-Administrator-Guide.md)             | Alta del tenant, carga de KB, edición de sinónimos                       |
+| [`07-Plan-Sprints-Capacitacion.md`](07-Plan-Sprints-Capacitacion.md) | Secuencia de entrega y capacitación                                      |
 
 **Bloque de metodología (no se repite acá):**
 
@@ -123,52 +112,47 @@ A–G) y [`../Antecedentes/IA-Mercado-Libre.md`](../Antecedentes/IA-Mercado-Libr
 
 Cada premisa está anclada a evidencia y **restringe** lo que el LLD puede proponer.
 
-| # | Restricción | Evidencia | Impacto en el diseño |
-|---|---|---|---|
-| R1 | No hay function-calling en IAConnect | 🟩 grep `tool_use\|tool_choice\|function_call` = 0 hits | Hay que construir la capa de tools (§4.1) |
-| R2 | No hay API REST de turnos consultable | 🟩 `ia-db/indexes/02_apis-servicios.md` §1 | Hay que construir `TurnosAssistApiController` (§4.1) |
-| R3 | No hay tabla de sinónimos/alias en turnos | 🟩 grep `alias\|sinonim\|keyword\|etiqueta\|tag` sobre los 27 archivos del diccionario = 0 hits en `turnos.md` | El diccionario lo aporta el asistente como KB versionada (§9.3) |
-| R4 | Los datos van **sin tildes** | 🟩 `01-sacar-turno-licencia-conducir-restaurando-usuario.spec.ts:11,55` («Clinica Medica») | Todo matching normaliza acentos (§4.2) |
-| R5 | **No existe reprogramación** | 🟩 grep `reprogram` sobre `*.cs`/`*.razor` en GDA.Core = 0 hits | Respuesta canónica obligatoria: cancelar + sacar nuevo (§10) |
-| R6 | El área turnos **no declara ninguna FK** | 🟩 `03-data/er-diagrams/turnos.dbml` (cabecera + `// inferida`) | El asistente no puede confiar en integridad referencial; valida por SP |
-| R7 | `sys_Turnos.Id_Incidente` es NOT NULL | 🟩 `03-data/fixtures/turnos.seed.yaml` (TC-001, TC-011-negativo) | Un tool de **alta** no es viable sin crear incidente → alcance solo-lectura (§4.1) |
-| R8 | El RAG de IAConnect es **léxico TF-IDF**, no semántico | 🟩 `RAGEngine.cs:34-120`; `VectorEmbedding = null` en `KnowledgeService.cs:75` | La KB debe escribirse con **vocabulario redundante** para que el léxico funcione (§9.4) |
-| R9 | El chunking es de **400 palabras / 50 de solape**, no tokens | 🟩 `KnowledgeService.cs:16-17,103-121` (`text.Split(' ','\n','\r','\t')`) | Los documentos de KB se dimensionan en palabras (§9.5) |
-| R10 | Recargar un documento **duplica** los fragmentos | 🟩 `KnowledgeService.cs:34-101` (no hay borrado previo ni dedupe por `Documento_Origen`) | El procedimiento de actualización de KB debe borrar antes de subir (§9.6) |
-| R11 | El widget existe pero **está gateado a un DNI** y en Sandbox | 🟩 `Index.razor:126` (`@if (_auth.Usuario == "30886698")`), `Index.razor.cs:71-76` | Hay que desgatear, mover a la home real y sacar credenciales del repo (§6) |
-| R12 | La home real es `Index2.razor` (`/`), no `Index.razor` (`/Index`) | 🟩 `pieces/ciudadano/README.md` §Mapa de rutas | El widget hoy **no se renderiza** en la home (§6.2) |
-| R13 | El widget **no fue portado a v2** | 🟩 `pieces/ciudadano-v2/README.md` §Estado de migración, fila «Perdido por ahora» | Deuda planificada: re-portar al migrar (§6.6) |
-| R14 | `ChatService` **no valida la sesión contra el tenant** | 🟩 `ChatService.cs:46-189` (si el GUID parsea, se reutiliza) | Riesgo de fuga cross-tenant del historial → test negativo obligatorio (§13.4) |
-| R15 | El historial se envía **dos veces** al modelo | 🟩 `ChatService.cs:102` y `:112` + `ClaudeProvider.cs:124-134,183` | Duplica costo de tokens; se corrige en el fix propuesto (§12.4) |
-| R16 | `PromptBuilder` **no escapa** el contenido citado | 🟩 `PromptBuilder.cs:16-54` (comillas dobles sin escapado) | Superficie de prompt-injection vía documento subido → guardrail (§11.3) |
-| R17 | BackOffice.Turnos **no tiene roles ni policies** | 🟩 `AuthManagerTurnos.cs:120-135`; el único discriminador es `IsOficina` + oficina elegida | La autorización del perfil funcionario se apoya en `IdOficina`, no en roles (§4.7) |
-| R18 | Las excepciones se tragan en las páginas de turnos | 🟩 `Turnos.razor.cs:40-43`, `TurnosTipo.razor.cs:14-17`, `TurnosMotivo.razor.cs:30-33`, `TurnosLugar.razor.cs:37-40` | FAQ obligatoria: «no me carga la lista de trámites» (§9.2) |
-| R19 | `CiudadanoApp` usa cookie **SameSite=Strict** | 🟩 `pieces/ciudadano-app/README.md` §Autenticación | Condiciona el embebido del widget (iframes/terceros) (§6.5) |
-| R20 | Los `PathBase` difieren: `/ciudadano` vs `/` | 🟩 `pieces/ciudadano/README.md`, `pieces/ciudadano-app/README.md` | El deep-link **depende del canal** → parámetro `canal` obligatorio (§8.3) |
+| #   | Restricción                                                       | Evidencia                                                                                                            | Impacto en el diseño                                                                    |
+| --- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| R1  | No hay function-calling en IAConnect                              | 🟩 grep `tool_use\|tool_choice\|function_call` = 0 hits                                                              | Hay que construir la capa de tools (§4.1)                                               |
+| R2  | No hay API REST de turnos consultable                             | 🟩 `ia-db/indexes/02_apis-servicios.md` §1                                                                           | Hay que construir `TurnosAssistApiController` (§4.1)                                    |
+| R3  | No hay tabla de sinónimos/alias en turnos                         | 🟩 grep `alias\|sinonim\|keyword\|etiqueta\|tag` sobre los 27 archivos del diccionario = 0 hits en `turnos.md`       | El diccionario lo aporta el asistente como KB versionada (§9.3)                         |
+| R4  | Los datos van **sin tildes**                                      | 🟩 `01-sacar-turno-licencia-conducir-restaurando-usuario.spec.ts:11,55` («Clinica Medica»)                           | Todo matching normaliza acentos (§4.2)                                                  |
+| R5  | **No existe reprogramación**                                      | 🟩 grep `reprogram` sobre `*.cs`/`*.razor` en GDA.Core = 0 hits                                                      | Respuesta canónica obligatoria: cancelar + sacar nuevo (§10)                            |
+| R6  | El área turnos **no declara ninguna FK**                          | 🟩 `03-data/er-diagrams/turnos.dbml` (cabecera + `// inferida`)                                                      | El asistente no puede confiar en integridad referencial; valida por SP                  |
+| R7  | `sys_Turnos.Id_Incidente` es NOT NULL                             | 🟩 `03-data/fixtures/turnos.seed.yaml` (TC-001, TC-011-negativo)                                                     | Un tool de **alta** no es viable sin crear incidente → alcance solo-lectura (§4.1)      |
+| R8  | El RAG de IAConnect es **léxico TF-IDF**, no semántico            | 🟩 `RAGEngine.cs:34-120`; `VectorEmbedding = null` en `KnowledgeService.cs:75`                                       | La KB debe escribirse con **vocabulario redundante** para que el léxico funcione (§9.4) |
+| R9  | El chunking es de **400 palabras / 50 de solape**, no tokens      | 🟩 `KnowledgeService.cs:16-17,103-121` (`text.Split(' ','\n','\r','\t')`)                                            | Los documentos de KB se dimensionan en palabras (§9.5)                                  |
+| R10 | Recargar un documento **duplica** los fragmentos                  | 🟩 `KnowledgeService.cs:34-101` (no hay borrado previo ni dedupe por `Documento_Origen`)                             | El procedimiento de actualización de KB debe borrar antes de subir (§9.6)               |
+| R11 | El widget existe pero **está gateado a un DNI** y en Sandbox      | 🟩 `Index.razor:126` (`@if (_auth.Usuario == "30886698")`), `Index.razor.cs:71-76`                                   | Hay que desgatear, mover a la home real y sacar credenciales del repo (§6)              |
+| R12 | La home real es `Index2.razor` (`/`), no `Index.razor` (`/Index`) | 🟩 `pieces/ciudadano/README.md` §Mapa de rutas                                                                       | El widget hoy **no se renderiza** en la home (§6.2)                                     |
+| R13 | El widget **no fue portado a v2**                                 | 🟩 `pieces/ciudadano-v2/README.md` §Estado de migración, fila «Perdido por ahora»                                    | Deuda planificada: re-portar al migrar (§6.6)                                           |
+| R14 | `ChatService` **no valida la sesión contra el tenant**            | 🟩 `ChatService.cs:46-189` (si el GUID parsea, se reutiliza)                                                         | Riesgo de fuga cross-tenant del historial → test negativo obligatorio (§13.4)           |
+| R15 | El historial se envía **dos veces** al modelo                     | 🟩 `ChatService.cs:102` y `:112` + `ClaudeProvider.cs:124-134,183`                                                   | Duplica costo de tokens; se corrige en el fix propuesto (§12.4)                         |
+| R16 | `PromptBuilder` **no escapa** el contenido citado                 | 🟩 `PromptBuilder.cs:16-54` (comillas dobles sin escapado)                                                           | Superficie de prompt-injection vía documento subido → guardrail (§11.3)                 |
+| R17 | BackOffice.Turnos **no tiene roles ni policies**                  | 🟩 `AuthManagerTurnos.cs:120-135`; el único discriminador es `IsOficina` + oficina elegida                           | La autorización del perfil funcionario se apoya en `IdOficina`, no en roles (§4.7)      |
+| R18 | Las excepciones se tragan en las páginas de turnos                | 🟩 `Turnos.razor.cs:40-43`, `TurnosTipo.razor.cs:14-17`, `TurnosMotivo.razor.cs:30-33`, `TurnosLugar.razor.cs:37-40` | FAQ obligatoria: «no me carga la lista de trámites» (§9.2)                              |
+| R19 | `CiudadanoApp` usa cookie **SameSite=Strict**                     | 🟩 `pieces/ciudadano-app/README.md` §Autenticación                                                                   | Condiciona el embebido del widget (iframes/terceros) (§6.5)                             |
+| R20 | Los `PathBase` difieren: `/ciudadano` vs `/`                      | 🟩 `pieces/ciudadano/README.md`, `pieces/ciudadano-app/README.md`                                                    | El deep-link **depende del canal** → parámetro `canal` obligatorio (§8.3)               |
 
-> 🟨 **Lectura conjunta de R7 + R2:** el alcance de este primer caso es **estrictamente de solo lectura**. Un tool
-> que *saque* un turno tendría que replicar `update_Asignar` (18 parámetros, `SysTurnosDataManager.cs:35-63`), la
-> reserva blanda de 5 minutos (`EntregaTurnosComponent.razor.cs:284-285`), las validaciones de cupo e
-> incumplimiento (`TurnosService.cs:197-278`) y la creación del incidente ligado (R7). Eso es reimplementar el
-> wizard de 7 pasos dentro del asistente — exactamente lo que la industria desaconseja (🟦 *"el asistente no
-> reimplementa el negocio; orquesta y deriva"*, [`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md) §B3).
+> 🟨 **Lectura conjunta de R7 + R2:** el alcance de este primer caso es **estrictamente de solo lectura**. Un tool que *saque* un turno tendría que replicar `update_Asignar` (18 parámetros, `SysTurnosDataManager.cs:35-63`), la reserva blanda de 5 minutos (`EntregaTurnosComponent.razor.cs:284-285`), las validaciones de cupo e
+> incumplimiento (`TurnosService.cs:197-278`) y la creación del incidente ligado (R7). Eso es reimplementar el wizard de 7 pasos dentro del asistente — exactamente lo que la industria desaconseja (🟦 *"el asistente no reimplementa el negocio; orquesta y deriva"*, [`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md) §B3).
 > **Decisión: informar + deep-link, nunca transaccionar.** Ver [`04-ADR.md`](04-ADR.md).
 
 ### 1.4 Los dos perfiles como eje transversal
 
-El caso tiene **dos audiencias con permisos y necesidades distintas**. No son "el mismo bot con otro prompt": son
-**dos tenants de IAConnect**, con KB, tools y guardrails distintos.
+El caso tiene **dos audiencias con permisos y necesidades distintas**. No son "el mismo bot con otro prompt": son **dos tenants de IAConnect**, con KB, tools y guardrails distintos.
 
-| Dimensión | Perfil **Ciudadano** | Perfil **Funcionario** |
-|---|---|---|
-| Tenant IAConnect (propuesto) | `gda-turnos-ciudadano` | `gda-turnos-funcionario` |
-| Apps anfitrionas | 🟩 `GDA.Core.Ciudadano` (`PathBase=/ciudadano`), `GDA.Core.CiudadanoApp` (`PathBase=/`) | 🟩 `GDA.Core.BackOffice.Turnos` |
-| Identidad | 🟩 DNI (`_auth.Usuario` se parsea con `decimal.Parse`, `Turnos.razor.cs:33`) | 🟩 `Usuario` (DNI) + `IsOficina` + `IdOficina` (`AuthManagerTurnos.cs:120-135`) |
-| Alcance de datos | **Solo sus propios turnos** (filtro duro por DNI) | **Solo su oficina elegida** (filtro duro por `IdOficina`) |
-| Tools habilitadas | `buscar_tramite`, `requisitos_tramite`, `disponibilidad`, `mis_turnos` | las 4 anteriores + `agenda_oficina`, `reglas_oficina` |
-| Tono | 🟩 Voseo rioplatense, cercano (consistente con los literales del sistema: *"No podes sacar mas de…"*, `TurnosService.cs:249`) | Voseo, técnico-operativo |
-| Deep-links | `/ciudadano/...` o `/...` según canal (R20) | `/Agenda`, `/Oficina`, `/Turno` |
-| Qué nunca revelar | Datos de otro DNI; nombres/DNI de otros vecinos | Datos de vecinos fuera de su oficina; credenciales; SQL |
+| Dimensión                    | Perfil **Ciudadano**                                                                                                          | Perfil **Funcionario**                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Tenant IAConnect (propuesto) | `gda-turnos-ciudadano`                                                                                                        | `gda-turnos-funcionario`                                                        |
+| Apps anfitrionas             | 🟩 `GDA.Core.Ciudadano` (`PathBase=/ciudadano`), `GDA.Core.CiudadanoApp` (`PathBase=/`)                                       | 🟩 `GDA.Core.BackOffice.Turnos`                                                 |
+| Identidad                    | 🟩 DNI (`_auth.Usuario` se parsea con `decimal.Parse`, `Turnos.razor.cs:33`)                                                  | 🟩 `Usuario` (DNI) + `IsOficina` + `IdOficina` (`AuthManagerTurnos.cs:120-135`) |
+| Alcance de datos             | **Solo sus propios turnos** (filtro duro por DNI)                                                                             | **Solo su oficina elegida** (filtro duro por `IdOficina`)                       |
+| Tools habilitadas            | `buscar_tramite`, `requisitos_tramite`, `disponibilidad`, `mis_turnos`                                                        | las 4 anteriores + `agenda_oficina`, `reglas_oficina`                           |
+| Tono                         | 🟩 Voseo rioplatense, cercano (consistente con los literales del sistema: *"No podes sacar mas de…"*, `TurnosService.cs:249`) | Voseo, técnico-operativo                                                        |
+| Deep-links                   | `/ciudadano/...` o `/...` según canal (R20)                                                                                   | `/Agenda`, `/Oficina`, `/Turno`                                                 |
+| Qué nunca revelar            | Datos de otro DNI; nombres/DNI de otros vecinos                                                                               | Datos de vecinos fuera de su oficina; credenciales; SQL                         |
 
 ```mermaid
 flowchart TD
@@ -197,17 +181,10 @@ flowchart TD
     style T2 fill:#e3f2fd
 ```
 
-> 🟨 **Por qué dos tenants y no uno con roles:** el corte de tenant de IAConnect ya está implementado y probado
-> (`TenantAccessFilter.cs:30-44`, 🟩 403 si `claim id_tenant != route tenantId`). Reusarlo como frontera entre
-> perfiles es gratis y auditable. Un solo tenant obligaría a inventar un corte por rol **dentro** del prompt —
-> exactamente lo que la regla de oro de RAG prohíbe (*"el control de acceso se aplica en la recuperación, no
-> pidiéndole al modelo que no mire"*, [`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md) §C3).
-> Además, la KB queda naturalmente particionada: 🟩 `RAGEngine` recupera por `GetListByIdTenantAsync(tenantId)`
-> (`RAGEngine.cs:34-120`), así que un fragmento del funcionario **nunca** puede entrar al prompt del ciudadano.
+> 🟨 **Por qué dos tenants y no uno con roles:** el corte de tenant de IAConnect ya está implementado y probado (`TenantAccessFilter.cs:30-44`, 🟩 403 si `claim id_tenant != route tenantId`). Reusarlo como frontera entre perfiles es gratis y auditable. Un solo tenant obligaría a inventar un corte por rol **dentro** del prompt — exactamente lo que la regla de oro de RAG prohíbe (*"el control de acceso se aplica en la recuperación, no pidiéndole al modelo que no mire"*, [`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md) §C3).
+> Además, la KB queda naturalmente particionada: 🟩 `RAGEngine` recupera por `GetListByIdTenantAsync(tenantId)` (`RAGEngine.cs:34-120`), así que un fragmento del funcionario **nunca** puede entrar al prompt del ciudadano.
 
-**Lo reusable para otras áreas (este caso es el modelo):** el patrón *"un tenant por perfil + tools de solo lectura
-con filtro duro por identidad + deep-links validados + KB con vocabulario redundante"* es agnóstico de Turnos. Se
-marca con 🔁 **REUSABLE** cada pieza que se traslada tal cual a Reclamos, Infracciones, Comercios, etc.
+**Lo reusable para otras áreas (este caso es el modelo):** el patrón *"un tenant por perfil + tools de solo lectura con filtro duro por identidad + deep-links validados + KB con vocabulario redundante"* es agnóstico de Turnos. Se marca con 🔁 **REUSABLE** cada pieza que se traslada tal cual a Reclamos, Infracciones, Comercios, etc.
 
 ---
 
@@ -450,21 +427,18 @@ flowchart LR
 **El hallazgo crítico, en detalle:**
 
 > 🟩 **NO existe ninguna tabla ni columna de alias, sinónimos, keywords ni etiquetas en el área turnos.**
-> `lut_TiposTurnos` y `lut_MotivosTurnos` solo tienen `Descripcion` como texto de nombre. Un grep sobre los **27
-> archivos** del diccionario de datos por `alias|sinonim|keyword|etiqueta|tag` devuelve únicamente
-> `lut_MotivosIncidente_Etiquetas` / `sys_Incidentes_Etiquetas` (**dominio incidentes**, no turnos) y `CBU_Alias`
-> (**compras**). Cero hits en `turnos.md`.
+> `lut_TiposTurnos` y `lut_MotivosTurnos` solo tienen `Descripcion` como texto de nombre. Un grep sobre los **27 archivos** del diccionario de datos por `alias|sinonim|keyword|etiqueta|tag` devuelve únicamente `lut_MotivosIncidente_Etiquetas` / `sys_Incidentes_Etiquetas` (**dominio incidentes**, no turnos) y `CBU_Alias` (**compras**). Cero hits en `turnos.md`.
 >
 > 🟨 **Conclusión:** el mapeo *"nombre coloquial del vecino → nombre real del motivo"* **debe resolverlo el
 > asistente con su propio diccionario**. El sistema no lo provee y no hay dónde guardarlo sin tocar el esquema.
 
 🟨 **Tres opciones evaluadas para alojar el diccionario** (decisión completa en [`04-ADR.md`](04-ADR.md)):
 
-| Opción | Cómo | Pro | Contra | Veredicto |
-|---|---|---|---|---|
-| **A. Tabla nueva** `lut_MotivosTurnos_Sinonimos` | DDL + SPs + ABM en BackOffice | Editable por negocio; consultable por SQL | 🟩 Toca el esquema de SGM_DESARROLLO (BD compartida por v1 y v2, `ADR-0007-migracion-v2.md`); requiere despliegue de BD y ABM nuevo | ❌ Costo alto para el primer caso |
-| **B. Documento de KB en IAConnect** | `sinonimos-turnos.md` subido a `sys_Fragmentos_Conocimiento` | 🟩 Cero cambios en GDA; editable por admin vía `KnowledgeController`; ya particionado por tenant | 🟩 El RAG es TF-IDF (R8): recupera solo si el término entra en el top-K=5; no es un índice de lookup | ⚠ Necesario pero **insuficiente solo** |
-| **C. Diccionario en el tool** (`SinonimosTramite.cs`) | Constante versionada en el código de la API de asistencia | Determinista, testeable, sin latencia, sin depender del top-K | Requiere despliegue para editarlo | ✅ **Elegida como primaria** |
+| Opción                                                | Cómo                                                         | Pro                                                                                              | Contra                                                                                                                              | Veredicto                              |
+| ----------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **A. Tabla nueva** `lut_MotivosTurnos_Sinonimos`      | DDL + SPs + ABM en BackOffice                                | Editable por negocio; consultable por SQL                                                        | 🟩 Toca el esquema de SGM_DESARROLLO (BD compartida por v1 y v2, `ADR-0007-migracion-v2.md`); requiere despliegue de BD y ABM nuevo | ❌ Costo alto para el primer caso       |
+| **B. Documento de KB en IAConnect**                   | `sinonimos-turnos.md` subido a `sys_Fragmentos_Conocimiento` | 🟩 Cero cambios en GDA; editable por admin vía `KnowledgeController`; ya particionado por tenant | 🟩 El RAG es TF-IDF (R8): recupera solo si el término entra en el top-K=5; no es un índice de lookup                                | ⚠ Necesario pero **insuficiente solo** |
+| **C. Diccionario en el tool** (`SinonimosTramite.cs`) | Constante versionada en el código de la API de asistencia    | Determinista, testeable, sin latencia, sin depender del top-K                                    | Requiere despliegue para editarlo                                                                                                   | ✅ **Elegida como primaria**            |
 
 > 🟨 **Decisión: C + B.** El tool `turnos_buscar_tramite` (§4.2) hace el matching **determinista** con el
 > diccionario versionado (C) — así el resultado no depende de que el RAG haya recuperado el fragmento correcto.

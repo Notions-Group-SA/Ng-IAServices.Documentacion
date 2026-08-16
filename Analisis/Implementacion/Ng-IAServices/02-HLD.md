@@ -1,20 +1,13 @@
 > **High Level Design (HLD) — Ng-IAServices / IAConnect.**
 >
 > **Propósito.** Describir el **cómo de alto nivel** del servicio IAConnect en lo que es **común a todos los
-> sistemas consumidores** (GDA.Core y BoleteriaCore), con eje en la **metodología reusable**: cómo se construye
-> un RAG, cómo se diseñarían las consultas dinámicas (*function-calling*), cómo se escribe el *system prompt* de
-> un tenant y qué pasos concretos hay que dar para **montar un caso de éxito nuevo desde cero**.
+> sistemas consumidores** (GDA.Core y BoleteriaCore), con eje en la **metodología reusable**: cómo se construye un RAG, cómo se diseñarían las consultas dinámicas (*function-calling*), cómo se escribe el *system prompt* de un tenant y qué pasos concretos hay que dar para **montar un caso de éxito nuevo desde cero**.
 >
-> **Alcance.** Descomposición funcional, flujo end-to-end de una conversación, metodología de RAG, metodología de
-> tools (hoy **no implementadas**), plantilla de *system prompt*, playbook de alta de caso, integración del widget,
-> modelo conversacional de referencia, seguridad y observabilidad de alto nivel. **No** cubre el detalle de
-> implementación clase-por-clase (→ [`03-LLD.md`](03-LLD.md)) ni las decisiones justificadas (→ [`04-ADR.md`](04-ADR.md)).
+> **Alcance.** Descomposición funcional, flujo end-to-end de una conversación, metodología de RAG, metodología de tools (hoy **no implementadas**), plantilla de *system prompt*, playbook de alta de caso, integración del widget, modelo conversacional de referencia, seguridad y observabilidad de alto nivel. **No** cubre el detalle de implementación clase-por-clase (→ [`03-LLD.md`](03-LLD.md)) ni las decisiones justificadas (→ [`04-ADR.md`](04-ADR.md)).
 >
-> **Audiencia.** Arquitectos y desarrolladores que integren un sistema consumidor; administradores funcionales que
-> curen la base de conocimiento; **agentes IA** que necesiten navegar el servicio con contratos explícitos.
+> **Audiencia.** Arquitectos y desarrolladores que integren un sistema consumidor; administradores funcionales que curen la base de conocimiento; **agentes IA** que necesiten navegar el servicio con contratos explícitos.
 >
-> **Estado.** `draft` — 2026-07-16. Documento derivado de código fuente relevado en `/NG/Ng-IAServices` y de la
-> base de conocimiento [`../../../ia-db/README.md`](../../../ia-db/README.md).
+> **Estado.** `draft` — 2026-07-16. Documento derivado de código fuente relevado en `/NG/Ng-IAServices` y de la base de conocimiento [`../../../ia-db/README.md`](../../../ia-db/README.md).
 >
 > **Convención de marcas** (heredada de [`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md)):
 > 🟩 *hecho verificado en fuente (se cita ruta:línea)* · 🟦 *práctica de industria establecida* · 🟨 *interpretación/inferencia propia*.

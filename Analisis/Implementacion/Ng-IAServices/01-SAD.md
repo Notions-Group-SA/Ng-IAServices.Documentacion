@@ -1,21 +1,13 @@
 > **Software Architecture Document (SAD) — Ng-IAServices / IAConnect.**
 >
-> **Propósito.** Describir la arquitectura del servicio **IAConnect** (repositorio `/NG/Ng-IAServices`) entendido como
-> **plataforma reusable de asistencia por IA multi-tenant**, común a los dos sistemas consumidores del estudio:
-> **GDA.Core** (gobierno digital municipal — caso objetivo: asistencia sobre **turnos**) y **BoleteriaCore**
-> (boletería digital — caso objetivo: asistencia sobre **gestión de eventos**). El eje del documento es la
-> **arquitectura reusable**, no el caso particular: los ejemplos de GDA y Boletería se usan para ilustrar.
+> **Propósito.** Describir la arquitectura del servicio **IAConnect** (repositorio `/NG/Ng-IAServices`) entendido como **plataforma reusable de asistencia por IA multi-tenant**, común a los dos sistemas consumidores del estudio: **GDA.Core** (gobierno digital municipal — caso objetivo: asistencia sobre **turnos**) y **BoleteriaCore** (boletería digital — caso objetivo: asistencia sobre **gestión de eventos**). El eje del documento es la **arquitectura reusable**, no el caso particular: los ejemplos de GDA y Boletería se usan para ilustrar.
 >
-> **Alcance.** Vistas C4 (contexto, contenedores, componentes), vista de datos, despliegue, escenarios end-to-end,
-> estrategia multi-tenant, seguridad arquitectónica (OWASP LLM Top 10 → controles reales), atributos de calidad y
-> tácticas, deuda técnica y evolución (RAG léxico → híbrido/semántico; *function-calling*), riesgos y trazabilidad.
+> **Alcance.** Vistas C4 (contexto, contenedores, componentes), vista de datos, despliegue, escenarios end-to-end, estrategia multi-tenant, seguridad arquitectónica (OWASP LLM Top 10 → controles reales), atributos de calidad y tácticas, deuda técnica y evolución (RAG léxico → híbrido/semántico; *function-calling*), riesgos y trazabilidad.
 > **Fuera de alcance:** el detalle de clases y firmas (→ [`03-LLD.md`](03-LLD.md)), las decisiones formalizadas
 > (→ [`04-ADR.md`](04-ADR.md)), la operación y el runbook (→ [`05-Operations-Guide.md`](05-Operations-Guide.md)) y
 > la administración funcional de tenants/KB (→ [`06-Administrator-Guide.md`](06-Administrator-Guide.md)).
 >
-> **Audiencia.** Arquitectos y desarrolladores de la plataforma; equipos de GDA y Boletería que la consumen;
-> responsables de seguridad y operaciones; **agentes IA** que deban razonar sobre el sistema (ver §0.2, tablas de
-> navegación y contratos explícitos pensados para lectura por máquina).
+> **Audiencia.** Arquitectos y desarrolladores de la plataforma; equipos de GDA y Boletería que la consumen; responsables de seguridad y operaciones; **agentes IA** que deban razonar sobre el sistema (ver §0.2, tablas de navegación y contratos explícitos pensados para lectura por máquina).
 >
 > **Estado.** `draft` — arquitectura **relevada del código fuente**, no propuesta de escritorio. Fecha: 2026-07-16.
 >
@@ -23,9 +15,7 @@
 > (bloques A–G) y [`../Antecedentes/IA-Mercado-Libre.md`](../Antecedentes/IA-Mercado-Libre.md) (patrones de UX).
 > **Base de conocimiento del código:** [`../../../ia-db/README.md`](../../../ia-db/README.md).
 >
-> **Convención de marcas** (heredada del antecedente): 🟩 *hecho verificado en fuente* (se cita `archivo:línea`) ·
-> 🟦 *práctica de industria establecida* · 🟨 *interpretación / inferencia propia*. Lo no verificado se marca
-> explícitamente. **Regla de precedencia:** ante divergencia entre documentación de origen y código, **gana el código**.
+> **Convención de marcas** (heredada del antecedente): 🟩 *hecho verificado en fuente* (se cita `archivo:línea`) · 🟦 *práctica de industria establecida* · 🟨 *interpretación / inferencia propia*. Lo no verificado se marca explícitamente. **Regla de precedencia:** ante divergencia entre documentación de origen y código, **gana el código**.
 
 # 01 · Software Architecture Document — Ng-IAServices (IAConnect)
 
@@ -55,9 +45,7 @@
 
 ### 0.1 Precedencia de la evidencia
 
-Toda afirmación marcada 🟩 se sostiene en un archivo del repositorio `/NG/Ng-IAServices`, citado como
-`ruta/archivo.cs:línea`. Toda afirmación 🟨 es inferencia del autor y **no debe tratarse como hecho**.
-🟦 señala práctica de industria, útil como criterio comparativo pero **no** como descripción del sistema.
+Toda afirmación marcada 🟩 se sostiene en un archivo del repositorio `/NG/Ng-IAServices`, citado como `ruta/archivo.cs:línea`. Toda afirmación 🟨 es inferencia del autor y **no debe tratarse como hecho**. 🟦 señala práctica de industria, útil como criterio comparativo pero **no** como descripción del sistema.
 
 ### 0.2 Tabla de navegación para agentes IA
 

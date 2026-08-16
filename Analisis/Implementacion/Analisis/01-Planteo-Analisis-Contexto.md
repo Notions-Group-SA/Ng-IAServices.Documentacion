@@ -24,6 +24,10 @@ Imagina que a un Chatbot-IA se le hacen las siguientes preguntas:
   Consulta ciudadano 4:
 >**Ciudadano:** ¿Quiero sacar un turno con para el veterinario?
 
+  Consulta ciudadano 5:
+>**Ciudadano:**  hola, quiero pedir un turno para castrar a mi perro
+
+
 ### Usuario administrador del sistema (funcionario): 
 
   Consulta agente municipal 1: `

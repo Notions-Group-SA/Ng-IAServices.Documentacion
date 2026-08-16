@@ -78,15 +78,15 @@ flowchart LR
   class OPS,DEV t
 ```
 
-| Responsabilidad | Administrador funcional | Operaciones / Desarrollo |
-|---|---|---|
-| Redactar y mantener el contenido de la KB | ✅ **Dueño** | Ejecuta la carga si el admin no tiene acceso |
-| Mantener el diccionario de sinónimos | ✅ **Dueño** (§5) | — |
-| Correr el banco de regresión (§8) | ✅ **Dueño** | — |
-| Proponer cambios al system prompt | ✅ Propone | ✅ Aplica y versiona |
-| Subir documentos vía `POST /api/tenants/{tenantId}/knowledge` | Sólo si tiene rol `admin` (🟩 `KnowledgeController` es `[Authorize(Roles="admin")]`) | ✅ |
-| Rotar API keys, tocar el DDL, ver métricas crudas en SQL | ❌ **Nunca** (§11) | ✅ |
-| Cambiar rutas / catálogo / código de GDA | ❌ | ✅ |
+| Responsabilidad                                               | Administrador funcional                                                              | Operaciones / Desarrollo                     |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------- |
+| Redactar y mantener el contenido de la KB                     | ✅ **Dueño**                                                                          | Ejecuta la carga si el admin no tiene acceso |
+| Mantener el diccionario de sinónimos                          | ✅ **Dueño** (§5)                                                                     | —                                            |
+| Correr el banco de regresión (§8)                             | ✅ **Dueño**                                                                          | —                                            |
+| Proponer cambios al system prompt                             | ✅ Propone                                                                            | ✅ Aplica y versiona                          |
+| Subir documentos vía `POST /api/tenants/{tenantId}/knowledge` | Sólo si tiene rol `admin` (🟩 `KnowledgeController` es `[Authorize(Roles="admin")]`) | ✅                                            |
+| Rotar API keys, tocar el DDL, ver métricas crudas en SQL      | ❌ **Nunca** (§11)                                                                    | ✅                                            |
+| Cambiar rutas / catálogo / código de GDA                      | ❌                                                                                    | ✅                                            |
 
 🟨 **Regla de oro del rol:** el administrador funcional **escribe**, no **configura**. Todo lo que sea infra, credenciales o esquema es de Operaciones.
 

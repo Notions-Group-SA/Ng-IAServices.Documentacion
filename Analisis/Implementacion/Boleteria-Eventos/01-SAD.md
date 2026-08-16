@@ -41,9 +41,7 @@
 ### 1.1 Propósito
 
 Definir la arquitectura de un **asistente de diagnóstico de configuración** embebido en
-`BoleteriaCore.Backoffice`, que ante la pregunta «**¿por qué no se publicó mi evento?**» (a) consulte el estado
-real del evento en la base, (b) **recorra la cadena relacional** hasta encontrar el eslabón roto, (c) explique en
-lenguaje llano qué falta y (d) **entregue un deep-link a la pantalla exacta** donde corregirlo.
+`BoleteriaCore.Backoffice`, que ante la pregunta «**¿por qué no se publicó mi evento?**» (a) consulte el estado real del evento en la base, (b) **recorra la cadena relacional** hasta encontrar el eslabón roto, (c) explique en lenguaje llano qué falta y (d) **entregue un deep-link a la pantalla exacta** donde corregirlo.
 
 El caso está definido textualmente por el solicitante:
 
@@ -57,13 +55,13 @@ Y precisado después:
 Esa segunda frase es la que gobierna todo el documento. El eje **no** es el catálogo de entidades: es la
 **relación** entre ellas. Descomprimida:
 
-| Frase del solicitante | Capacidad arquitectónica derivada | Sección |
-|---|---|---|
-| «por qué el evento no se publicó» | **Tool dinámica de diagnóstico**: estado real, no cacheable en RAG | [§9](#9-estrategia-de-conocimiento-estático-rag-vs-dinámico-tools) |
-| «qué configuración le faltó» | **Recorrido de la cadena de 4 saltos** hasta el eslabón roto | [§8](#8-vista-de-datos) |
-| «y dónde ir» / «enlace puntual a la página» | **Deep-link / hand-off** a una de las 11 rutas del área Eventos | [§6.4](#64-deeplinkbuilder--el-componente-que-materializa-el-caso) |
-| «guía para usuarios inexpertos» | **RAG estático**: reglas, wizard, vocabulario | [§9.2](#92-tabla-exhaustiva-fuente-por-fuente) |
-| «eventos se relaciona con Funciones/Tarifas/parámetros» | **La relación ES el producto**: ver §2.1 y §8 | [§2.1](#21-el-problema-real-una-cadena-invisible) |
+| Frase del solicitante                                   | Capacidad arquitectónica derivada                                  | Sección                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| «por qué el evento no se publicó»                       | **Tool dinámica de diagnóstico**: estado real, no cacheable en RAG | [§9](#9-estrategia-de-conocimiento-estático-rag-vs-dinámico-tools) |
+| «qué configuración le faltó»                            | **Recorrido de la cadena de 4 saltos** hasta el eslabón roto       | [§8](#8-vista-de-datos)                                            |
+| «y dónde ir» / «enlace puntual a la página»             | **Deep-link / hand-off** a una de las 11 rutas del área Eventos    | [§6.4](#64-deeplinkbuilder--el-componente-que-materializa-el-caso) |
+| «guía para usuarios inexpertos»                         | **RAG estático**: reglas, wizard, vocabulario                      | [§9.2](#92-tabla-exhaustiva-fuente-por-fuente)                     |
+| «eventos se relaciona con Funciones/Tarifas/parámetros» | **La relación ES el producto**: ver §2.1 y §8                      | [§2.1](#21-el-problema-real-una-cadena-invisible)                  |
 
 ### 1.2 Alcance
 
@@ -108,21 +106,15 @@ arreglar las inconsistencias que encuentra — ver [§14](#14-riesgos-y-mitigaci
 #### 1.4.1 «Publicado» merece su propio párrafo
 
 🟩 En `sys_VentaEntradas_Eventos` hay **dos flags independientes**: `Activo` (mapeado en el Model,
-`SysVentaEntradasEventosModel.cs:57`) y `Pausado` (**ni siquiera mapeado**: se escribe con `UpdateByPausado`,
-`SysVentaEntradasEventosDataManager.cs:32-42`, y se lee como columna cruda en `ParametrosEventosEdit.razor.cs:174`).
+`SysVentaEntradasEventosModel.cs:57`) y `Pausado` (**ni siquiera mapeado**: se escribe con `UpdateByPausado`, `SysVentaEntradasEventosDataManager.cs:32-42`, y se lee como columna cruda en `ParametrosEventosEdit.razor.cs:174`).
 
-🟩 «Publicado» es una **propiedad de ViewModel**, calculada como `Publicado = !Pausado`. **No hay estado enum, no
-hay borrador, no hay `Fecha_Publicacion` a nivel evento.** Las fechas de publicación son **por función**
-(`Fecha_Inicio_Publicacion`/`Fecha_Fin_Publicacion`, `SysVentaEntradasFuncionesModel.cs:27-29`).
+🟩 «Publicado» es una **propiedad de ViewModel**, calculada como `Publicado = !Pausado`. **No hay estado enum, no hay borrador, no hay `Fecha_Publicacion` a nivel evento.** Las fechas de publicación son **por función(`Fecha_Inicio_Publicacion`/`Fecha_Fin_Publicacion`, `SysVentaEntradasFuncionesModel.cs:27-29`).
 
-🟨 **Consecuencia arquitectónica directa:** el asistente **no puede leer un campo `Estado` y responder**. No
-existe. Tiene que **reconstruir** la noción de «publicado» desde dos flags, y la de «publicable» desde un
-recorrido relacional. Eso es exactamente lo que justifica una tool y no un RAG.
+🟨 **Consecuencia arquitectónica directa:** el asistente **no puede leer un campo `Estado` y responder**. No existe. Tiene que **reconstruir** la noción de «publicado» desde dos flags, y la de «publicable» desde un recorrido relacional. Eso es exactamente lo que justifica una tool y no un RAG.
 
 ### 1.5 La ambigüedad «Parámetros» (obligatorio leerla antes de seguir)
 
-La palabra «parámetros» significa **tres cosas distintas** en este dominio. Confundirlas arruina el diseño de las
-tools y del RAG, así que este documento fija la nomenclatura:
+La palabra «parámetros» significa **tres cosas distintas** en este dominio. Confundirlas arruina el diseño de las tools y del RAG, así que este documento fija la nomenclatura:
 
 | Uso | Qué es | ¿Participa de la publicación? |
 |---|---|---|
@@ -130,9 +122,7 @@ tools y del RAG, así que este documento fija la nomenclatura:
 | **Módulo «Parámetros» del Backoffice** | 🟩 El **módulo de administración completo**: `Components/Pages/Parametros/*`. Incluye eventos, cajeros, puntos de venta, usuarios, portada del portal. Las 11 rutas del área Eventos cuelgan de acá (`/ParametrosEventos*`) | 🟩 Sí — **es donde se configura todo**. Es el módulo, no la tabla |
 | **«El parámetro que faltó»** (frase del solicitante) | 🟨 Uso **coloquial**: significa «el dato de configuración que falta», que en la práctica casi siempre es **una tarifa con precio** | — |
 
-🟨 **Regla de redacción para todo el bloque**: cuando este documento dice «parámetro» sin calificar, se refiere al
-uso coloquial. La tabla se escribe siempre `lut_Parametros` en code-span. El módulo se escribe siempre
-«módulo Parámetros».
+🟨 **Regla de redacción para todo el bloque**: cuando este documento dice «parámetro» sin calificar, se refiere al uso coloquial. La tabla se escribe siempre `lut_Parametros` en code-span. El módulo se escribe siempre«módulo Parámetros».
 
 ⚠ Esta ambigüedad **es una trampa para el propio asistente**: si un usuario pregunta «¿qué parámetro me falta?», el LLM podría razonar hacia `lut_Parametros` y no encontrar nada, porque **ahí no hay nada que encontrar**. El system prompt debe desambiguarlo explícitamente (→ [§11.1](#111-control-de-alcance-conversacional)).
 

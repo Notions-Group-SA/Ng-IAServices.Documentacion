@@ -58,34 +58,27 @@ orbita alrededor de eso.
 
 ### 1.2 Por qué la desambiguación es el problema central (y no un detalle)
 
-🟩 **Hallazgo duro:** no existe ninguna tabla ni columna de alias, sinónimos, keywords o etiquetas en el área
-turnos. `lut_TiposTurnos` y `lut_MotivosTurnos` solo tienen `Descripcion` como texto de nombre; un grep sobre
-los 27 archivos del diccionario de datos por `alias|sinonim|keyword|etiqueta|tag` solo devuelve
-`lut_MotivosIncidente_Etiquetas` / `sys_Incidentes_Etiquetas` (dominio **incidentes**, no turnos) y `CBU_Alias`
-(compras) (`GDA.Core.Documentacion/GDA.Core-docs/docs/03-data/data-dictionary/turnos.md`).
+🟩 **Hallazgo duro:** no existe ninguna tabla ni columna de alias, sinónimos, keywords o etiquetas en el área turnos. `lut_TiposTurnos` y `lut_MotivosTurnos` solo tienen `Descripcion` como texto de nombre; un grep sobre los 27 archivos del diccionario de datos por `alias|sinonim|keyword|etiqueta|tag` solo devuelve
+`lut_MotivosIncidente_Etiquetas` / `sys_Incidentes_Etiquetas` (dominio **incidentes**, no turnos) y `CBU_Alias` (compras) (`GDA.Core.Documentacion/GDA.Core-docs/docs/03-data/data-dictionary/turnos.md`).
 
 🟩 Además, los datos reales van **sin tildes**: los specs E2E usan como *label* literal `"Clinica Medica"` y
 `"Licencia de Conducir"`
 (`GDA.Core/GDA.Core.BackOffice.Turnos.E2E/tests/SacarTurnos/01-sacar-turno-licencia-conducir-restaurando-usuario.spec.ts:11,55`).
 
-🟨 **Conclusión de diseño:** el mapeo *"nombre coloquial del vecino → nombre real del motivo"* **debe aportarlo
-el asistente**; el sistema no lo provee. Ese diccionario de sinónimos es un **artefacto de la KB**, versionado y
-gobernado (§11.3), no un dato de GDA. Esto convierte al asistente en algo que aporta valor que el sistema **no
-tiene**, no en un envoltorio bonito de lo que ya existe — y es la razón por la que este caso es un buen "primer
-caso de éxito".
+🟨 **Conclusión de diseño:** el mapeo *"nombre coloquial del vecino → nombre real del motivo"* **debe aportarlo el asistente**; el sistema no lo provee. Ese diccionario de sinónimos es un **artefacto de la KB**, versionado y gobernado (§11.3), no un dato de GDA. Esto convierte al asistente en algo que aporta valor que el sistema **no tiene**, no en un envoltorio bonito de lo que ya existe — y es la razón por la que este caso es un buen "primer caso de éxito".
 
 ### 1.3 Naturaleza del asistente (encuadre según el marco)
 
 Según la taxonomía del antecedente ([`../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md`](../Antecedentes/Analisis-Asistencia-IA-ChatBotIA.md) §A2):
 
-| Dimensión | Decisión para GDA-Turnos | Marca |
-|---|---|---|
-| Tipo | **Híbrido**: RAG (catálogo + FAQ + sinónimos) + tools (datos vigentes) + guardrails | 🟨 |
-| Dominio | **Acotado a Turnos** (no trámites en general, no multas, no reclamos) | 🟨 decisión de alcance |
-| Naturaleza | **Informacional-orquestador**: informa y **deriva** por deep-link. **No ejecuta** el alta del turno en Fase 1 | 🟨 |
-| Personalización | Ciudadano: sus propios turnos (por DNI de sesión). Funcionario: agenda de **su** oficina | 🟨 |
-| Ubicación | Widget embebido `Fito.ChatWidget` (ya existente en el repo) | 🟩 `GDA.Core.Ciudadano.csproj:45` |
-| Entrada multimodal | Texto en Fase 1. Imagen: el tenant lo permite por flag, sin caso de uso claro aún | 🟩 `Tenant.PermiteImagenes=false` por defecto |
+| Dimensión          | Decisión para GDA-Turnos                                                                                      | Marca                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Tipo               | **Híbrido**: RAG (catálogo + FAQ + sinónimos) + tools (datos vigentes) + guardrails                           | 🟨                                            |
+| Dominio            | **Acotado a Turnos** (no trámites en general, no multas, no reclamos)                                         | 🟨 decisión de alcance                        |
+| Naturaleza         | **Informacional-orquestador**: informa y **deriva** por deep-link. **No ejecuta** el alta del turno en Fase 1 | 🟨                                            |
+| Personalización    | Ciudadano: sus propios turnos (por DNI de sesión). Funcionario: agenda de **su** oficina                      | 🟨                                            |
+| Ubicación          | Widget embebido `Fito.ChatWidget` (ya existente en el repo)                                                   | 🟩 `GDA.Core.Ciudadano.csproj:45`             |
+| Entrada multimodal | Texto en Fase 1. Imagen: el tenant lo permite por flag, sin caso de uso claro aún                             | 🟩 `Tenant.PermiteImagenes=false` por defecto |
 
 ### 1.4 Ubicación del caso en el ecosistema (C4 vía flowchart — contenedores)
 
